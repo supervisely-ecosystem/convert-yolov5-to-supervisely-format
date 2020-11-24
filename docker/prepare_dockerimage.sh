@@ -7,7 +7,7 @@ VERSION='1.0.0'
 
 BASE_DOCKER_IMAGE='supervisely/base-py-sdk:6'
 
-DOCKER_IMAGE='supervisely/coco_to_sly'
+DOCKER_IMAGE='supervisely/convert-yolov5-to-supervisely'
 DOCKER_IMAGE_LATEST=$DOCKER_IMAGE':latest'
 DOCKER_IMAGE_VERSION=$DOCKER_IMAGE':'$VERSION
 
