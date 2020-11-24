@@ -19,6 +19,6 @@
   "isolate": true,
   "headless": true,
   "context_menu": {
-    "target": ["files_file"]
+    "target": ["files_folder", "files_file"]
   }
 }
