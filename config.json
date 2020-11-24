@@ -1,9 +1,9 @@
 {
-  "name": "Coco to Sly Converter",
+  "name": "YOLOv5 to Sly Converter",
   "type": "app",
   "categories": [
-    "import",
-    "http"
+    "yolov5",
+    "convert format"
   ],
   "description": "Convert Coco format to Sly format",
   "docker_image": "supervisely/coco-to-sly:1.0.0",
@@ -16,4 +16,10 @@
   "icon_backup": "https://img.icons8.com/color/96/000000/cloud-link.png",
   "icon": "https://img.icons8.com/color/96/000000/cloud-storage.png",
   "icon_background": "#FFFFFF"
+  "isolate": true,
+  "headless": true,
+  "context_menu": {
+    "target": ["images_project"],
+    "context_root": "Run App"
+  }
 }
