@@ -6,7 +6,7 @@
     "convert format"
   ],
   "description": "Convert YOLOv5 format to Sly format",
-  "docker_image": "supervisely/coco-to-sly:1.0.0",
+  "docker_image": "supervisely/convert-supervisely-to-yolov5",
   "main_script": "src/coco_to_sly.py",
   "gui_template": "src/gui.html",
   "modal_template": "src/modal.html",
