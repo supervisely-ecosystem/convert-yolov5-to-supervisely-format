@@ -1,0 +1,19 @@
+{
+  "name": "Coco to Sly Converter",
+  "type": "app",
+  "categories": [
+    "import",
+    "http"
+  ],
+  "description": "Convert Coco format to Sly format",
+  "docker_image": "supervisely/coco-to-sly:1.0.0",
+  "main_script": "src/coco_to_sly.py",
+  "gui_template": "src/gui.html",
+  "modal_template": "src/modal.html",
+  "modal_template_state": {},
+  "task_location": "workspace_tasks",
+  "isolate": true,
+  "icon_backup": "https://img.icons8.com/color/96/000000/cloud-link.png",
+  "icon": "https://img.icons8.com/color/96/000000/cloud-storage.png",
+  "icon_background": "#FFFFFF"
+}
