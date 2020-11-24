@@ -15,7 +15,7 @@
   "isolate": true,
   "icon_backup": "https://img.icons8.com/color/96/000000/cloud-link.png",
   "icon": "https://img.icons8.com/color/96/000000/cloud-storage.png",
-  "icon_background": "#FFFFFF"
+  "icon_background": "#FFFFFF",
   "isolate": true,
   "headless": true,
   "context_menu": {
