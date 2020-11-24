@@ -19,7 +19,6 @@
   "isolate": true,
   "headless": true,
   "context_menu": {
-    "target": ["images_project"],
-    "context_root": "Run App"
+    "target": ["files_file"]
   }
 }
