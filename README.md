@@ -27,7 +27,7 @@ Transform [YOLO v5](https://github.com/ultralytics/yolov5) project folder or `.t
 
 ## Preparation
 
-1. You can [Coco128](https://www.kaggle.com/ultralytics/coco128/download) project or our[lemons](link) project with custom classes
+1. You can download [Coco128](https://www.kaggle.com/ultralytics/coco128/download) project or our [lemons](link) project with custom classes
 or create your own project.
 2. YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
