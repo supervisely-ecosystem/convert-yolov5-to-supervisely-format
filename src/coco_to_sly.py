@@ -197,6 +197,7 @@ def main():
     sly.logger.info("Script arguments", extra={
         "context.teamId": TEAM_ID,
         "context.workspaceId": WORKSPACE_ID,
+        "modal.state.slyFolder": PROJECT_DIR,
         "CONFIG_DIR": os.environ.get("CONFIG_DIR", "ENV not found")
     })
 
