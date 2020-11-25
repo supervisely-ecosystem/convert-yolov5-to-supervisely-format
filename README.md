@@ -27,7 +27,7 @@ Transform YOLO v5 project folder or `.tar` archive to supervisely format project
 
 ## Preparation
 
-1. Download example projects: [Coco128](link=https://www.kaggle.com/ultralytics/coco128/download) and [lemons](link=http://78.46.75.100:38585/public/api/v3/file-storage.download?groupId=8&path=/example/)
+1. Download example projects: [Coco128](https://www.kaggle.com/ultralytics/coco128/download) and [lemons](http://78.46.75.100:38585/public/api/v3/file-storage.download?groupId=8&path=/example/)
 or create your own project
 2. YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
@@ -55,7 +55,7 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
 **Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`.
 <img src="https://i.imgur.com/qlEcP2t.png"/> 
 
-**Note**: Your project will be created in your current workspace
+**Note**: You will be redirected to `Workspace`->`Tasks` page. You can go to your project by clicking on it's name from `Tasks` page. Project will be available in your current `Workspace`
 <img src="https://i.imgur.com/mzVYWKF.png"/>
 
 **Note**: Running procedure is simialr for almost all apps that are started from context menu. Example steps with screenshots are [here in how-to-run section](https://github.com/supervisely-ecosystem/merge-classes#how-to-run). 
