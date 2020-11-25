@@ -130,7 +130,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info):
     for dataset_name in sly.fs.get_subdirs(datasets_dir):
         images_list = sorted(sly.fs.list_files(os.path.join(datasets_dir, dataset_name)))
 
-        if os.listdir(len(images_list)) > 0:
+        if len(images_list) > 0:
             dataset = api.dataset.create(project.id, dataset_name)
 
             progress = sly.Progress(f'Processing {dataset_name} dataset', len(images_list), sly.logger)
