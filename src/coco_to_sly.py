@@ -184,10 +184,12 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     with tarfile.open(os.path.join(storage_dir, "images_to_convert.tar")) as archive:
         archive.extractall(extract_dir)
 
+    input_dir = extract_dir
+
     if INPUT_DIR:
       cur_files_path = cur_files_path.rstrip('/')
+      input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
 
-    input_dir = os.path.join(extract_dir, cur_files_path.lstrip("/"))
     project_name = os.path.basename(cur_files_path)
 
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
