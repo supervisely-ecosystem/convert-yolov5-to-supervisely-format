@@ -180,7 +180,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     input_dir = os.path.join(extract_dir, PROJECT_DIR.lstrip("/"))
 
-    project_name = os.path.basename(PROJECT_DIR)
+    project_name = os.path.basename(PROJECT_DIR.rstrip('/'))
 
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
