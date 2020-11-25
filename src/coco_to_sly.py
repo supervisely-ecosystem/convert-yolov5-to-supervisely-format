@@ -124,7 +124,7 @@ def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
                      project_meta.get_obj_class(class_name))
 
 
-def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info):
+def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
     datasets_dir = os.path.join(input_dir, 'images')
 
     for dataset_name in sly.fs.get_subdirs(datasets_dir):
