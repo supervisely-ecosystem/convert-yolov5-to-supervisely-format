@@ -8,7 +8,8 @@ my_app = sly.AppService()
 
 TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ['context.workspaceId']
-PROJECT_DIR = os.environ["modal.state.slyFolder"]#download from FILES
+INPUT_DIR = os.environ.get("modal.state.slyFolder")
+INPUT_FILE = os.environ.get("modal.state.slyFile")
 
 DATA_CONFIG_NAME = 'data_config.yaml'
 
@@ -174,13 +175,20 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     storage_dir = my_app.data_dir
     extract_dir = os.path.join(storage_dir, "images_to_convert")
 
-    api.file.download(TEAM_ID, PROJECT_DIR, os.path.join(storage_dir, "images_to_convert.tar")) #download data
+    if INPUT_DIR:
+        cur_files_path = INPUT_DIR
+    else:
+        cur_files_path = INPUT_FILE
+
+    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, "images_to_convert.tar")) #download data
     with tarfile.open(os.path.join(storage_dir, "images_to_convert.tar")) as archive:
         archive.extractall(extract_dir)
 
-    input_dir = os.path.join(extract_dir, PROJECT_DIR.lstrip("/"))
+    if INPUT_DIR:
+      cur_files_path = cur_files_path.rstrip('/')
 
-    project_name = os.path.basename(PROJECT_DIR.rstrip('/'))
+    input_dir = os.path.join(extract_dir, cur_files_path.lstrip("/"))
+    project_name = os.path.basename(cur_files_path)
 
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
@@ -188,6 +196,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     process_coco_dir(input_dir, project, project_meta, api, config_yaml_info)
 
+    api.task.set_output_project(task_id, project.id, project.name)
 
 
     my_app.stop()
@@ -197,7 +206,8 @@ def main():
     sly.logger.info("Script arguments", extra={
         "context.teamId": TEAM_ID,
         "context.workspaceId": WORKSPACE_ID,
-        "modal.state.slyFolder": PROJECT_DIR,
+        "modal.state.slyFolder": INPUT_DIR,
+        "modal.state.slyFile": INPUT_FILE,
         "CONFIG_DIR": os.environ.get("CONFIG_DIR", "ENV not found")
     })
 

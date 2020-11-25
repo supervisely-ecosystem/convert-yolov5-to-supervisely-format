@@ -1,11 +1,11 @@
 {
-  "name": "YOLOv5 to Sly Converter",
+  "name": "Convert Supervisely to YOLO v5 format",
   "type": "app",
   "categories": [
     "yolov5",
     "convert format"
   ],
-  "description": "Convert YOLOv5 format to Sly format",
+  "description": "Transform YOLO v5 format to supervisely project",
   "docker_image": "supervisely/convert-supervisely-to-yolov5",
   "main_script": "src/coco_to_sly.py",
   "gui_template": "src/gui.html",
