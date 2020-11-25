@@ -22,13 +22,13 @@
 
 ## Overview
 
-Transform YOLO v5 project folder or `.tar` archive to supervisely format project.
+Transform [YOLO v5](https://github.com/ultralytics/yolov5) project folder or `.tar` archive to supervisely format project.
 
 
 ## Preparation
 
-1. Download example projects: [Coco128](https://www.kaggle.com/ultralytics/coco128/download) and [lemons](http://78.46.75.100:38585/public/api/v3/file-storage.download?groupId=8&path=/example/)
-or create your own project
+1. You can [Coco128](https://www.kaggle.com/ultralytics/coco128/download) project or our[lemons](link) project with custom classes
+or create your own project.
 2. YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
 ```
