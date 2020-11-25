@@ -128,45 +128,49 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info):
     datasets_dir = os.path.join(input_dir, 'images')
 
     for dataset_name in sly.fs.get_subdirs(datasets_dir):
-        dataset = api.dataset.create(project.id, dataset_name)
-
         images_list = sorted(sly.fs.list_files(os.path.join(datasets_dir, dataset_name)))
 
-        progress = sly.Progress(f'Processing {dataset_name} dataset', len(images_list), sly.logger)
+        if os.listdir(len(images_list)) > 0:
+            dataset = api.dataset.create(project.id, dataset_name)
 
-        for batch in sly._utils.batched(images_list):
-            cur_img_names_batch = []
-            cur_img_paths_batch = []
-            cur_anns_batch = []
+            progress = sly.Progress(f'Processing {dataset_name} dataset', len(images_list), sly.logger)
 
-            for image_file_name in batch:
-                image_name = os.path.basename(image_file_name)
+            for batch in sly._utils.batched(images_list):
+                cur_img_names_batch = []
+                cur_img_paths_batch = []
+                cur_anns_batch = []
 
-                cur_img_names_batch.append(image_name)
-                cur_img_paths_batch.append(image_file_name)
-                ann_file_name = os.path.join(input_dir, 'labels', dataset_name,
-                                             f"{os.path.splitext(image_name)[0]}.txt")
+                for image_file_name in batch:
+                    image_name = os.path.basename(image_file_name)
 
-                curr_img = sly.image.read(image_file_name)
-                height, width = curr_img.shape[:2]
+                    cur_img_names_batch.append(image_name)
+                    cur_img_paths_batch.append(image_file_name)
+                    ann_file_name = os.path.join(input_dir, 'labels', dataset_name,
+                                                 f"{os.path.splitext(image_name)[0]}.txt")
 
-                labels_arr = []
+                    curr_img = sly.image.read(image_file_name)
+                    height, width = curr_img.shape[:2]
 
-                if os.path.isfile(ann_file_name):
-                    with open(ann_file_name, 'r') as f:
-                        for line in f:
-                            label = parse_line(line, width, height, project_meta, config_yaml_info)
-                            labels_arr.append(label)
+                    labels_arr = []
 
-                ann = sly.Annotation(img_size=(height, width), labels=labels_arr)
-                cur_anns_batch.append(ann)
+                    if os.path.isfile(ann_file_name):
+                        with open(ann_file_name, 'r') as f:
+                            for line in f:
+                                label = parse_line(line, width, height, project_meta, config_yaml_info)
+                                labels_arr.append(label)
 
-            img_infos = api.image.upload_paths(dataset.id, cur_img_names_batch, cur_img_paths_batch)
-            img_ids = [x.id for x in img_infos]
+                    ann = sly.Annotation(img_size=(height, width), labels=labels_arr)
+                    cur_anns_batch.append(ann)
 
-            api.annotation.upload_anns(img_ids, cur_anns_batch)
+                img_infos = api.image.upload_paths(dataset.id, cur_img_names_batch, cur_img_paths_batch)
+                img_ids = [x.id for x in img_infos]
 
-            progress.iters_done_report(len(batch))
+                api.annotation.upload_anns(img_ids, cur_anns_batch)
+
+                progress.iters_done_report(len(batch))
+
+        else:
+            app_logger.warn(f"Dataset \"{dataset_name}\" is empty")
 
 @my_app.callback("coco_sly_converter")
 @sly.timeit
@@ -190,7 +194,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
       cur_files_path = cur_files_path.rstrip('/')
       input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
 
-    project_name = os.path.basename(cur_files_path)
+    project_name = sly.fs.get_file_name(cur_files_path)
 
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
