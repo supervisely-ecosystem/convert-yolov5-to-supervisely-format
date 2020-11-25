@@ -8,8 +8,7 @@ my_app = sly.AppService()
 
 TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ['context.workspaceId']
-PROJECT_NAME = os.environ['modal.state.resultProjectName']
-PROJECT_DIR = os.environ["modal.state.inputDataDir"] #download from FILES
+PROJECT_DIR = os.environ["modal.state.slyFolder"]#download from FILES
 
 DATA_CONFIG_NAME = 'data_config.yaml'
 
@@ -181,8 +180,10 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     input_dir = os.path.join(extract_dir, PROJECT_DIR.lstrip("/"))
 
+    project_name = os.path.basename(PROJECT_DIR)
+
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
-    project = api.project.create(WORKSPACE_ID, PROJECT_NAME, change_name_if_conflict=True)
+    project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     project_meta = upload_project_meta(api, project.id, config_yaml_info)
 
     process_coco_dir(input_dir, project, project_meta, api, config_yaml_info)
