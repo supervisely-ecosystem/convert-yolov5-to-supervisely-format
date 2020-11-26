@@ -24,10 +24,13 @@
 App transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
 
 
-Transform [YOLO v5](https://github.com/ultralytics/yolov5) project folder or `.tar` archive to supervisely format project.
-
-
 ## Preparation
+
+1. Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/13frGSuhizrTsot_4ddoMK3llj7O0lKDQ?usp=sharing)) or tar archives (download example).
+
+
+
+
 
 1. You can download [Coco128](https://www.kaggle.com/ultralytics/coco128/download) project or our [lemons](link) project with custom classes
 or create your own project.
