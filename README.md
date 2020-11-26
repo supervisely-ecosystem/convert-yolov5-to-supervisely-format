@@ -1,6 +1,6 @@
 <div align="center" markdown>
 
-<img src="https://i.imgur.com/qIfNGIf.png"/>
+<img src="https://i.imgur.com/0uLnE9D.png"/>
 
 # Create Users from CSV
 
