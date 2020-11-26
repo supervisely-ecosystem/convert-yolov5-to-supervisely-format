@@ -2,7 +2,7 @@
 
 <img src="https://i.imgur.com/1YEjnZa.png"/>
 
-# Create Users from CSV
+# Convert YOLOv5 to Supervisely format
 
 <p align="center">
   <a href="#Overview">Overview</a> •
