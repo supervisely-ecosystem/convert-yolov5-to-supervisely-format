@@ -21,6 +21,8 @@
 </div>
 
 ## Overview
+App transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
+
 
 Transform [YOLO v5](https://github.com/ultralytics/yolov5) project folder or `.tar` archive to supervisely format project.
 
