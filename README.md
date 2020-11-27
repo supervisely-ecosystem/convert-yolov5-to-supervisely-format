@@ -30,6 +30,15 @@ Upload images and labels in YOLO v5 format to team files. It is possible to uplo
 
 ![](https://i.imgur.com/BRA0Bjt.png)
 
+**Custom data_config.yaml**
+```
+names: [kiwi, lemon]            # class names
+colors: [[255,1,1], [1,255,1]]  # class colors
+nc: 2                           # number of classes
+train: ../lemons/images/train   # path to train imgs
+val: ../lemons/images/val       # path to val imgs
+```
+
 **Note**: Here's the example of how your YOLO v5 project folder or archive tree should look like:
 <img src="https://i.imgur.com/z3VjMnY.png"/>
 
@@ -50,12 +59,23 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
 
 
 ## How To Run 
+
 **Step 1**: Add app to your team from Ecosystem if it is not there. Application will be added to `Current Team`->`PLugins & Apps` page.
 
-**Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`.
+**Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`. You will be redirected to `Workspace`->`Tasks` page.
 <img src="https://i.imgur.com/weCzQAf.png"/> 
 
-**Note**: You will be redirected to `Workspace`->`Tasks` page. You can go to your project by clicking on it's name from `Tasks` page. Project will be available in your current `Workspace`
+**Note**: Running procedure is simialr for almost all apps that are started from context menu. Example steps with screenshots are [here in how-to-run section](https://github.com/supervisely-ecosystem/merge-classes#how-to-run). 
+
+## How to use
+
+Project will be available in your current `Workspace` with the same name as the folder or archive with your YOLO v5 project. 
+Application creates 2 datasets `train` and `val`, and applies matching train and val tags to images. 
+If there are no images in your val directory only `train` dataset will be created.
+
+**img**
+
+You can also access your project by clicking on it's name from `Tasks` page
 <img src="https://i.imgur.com/5BneltN.png"/>
 
-**Note**: Running procedure is simialr for almost all apps that are started from context menu. Example steps with screenshots are [here in how-to-run section](https://github.com/supervisely-ecosystem/merge-classes#how-to-run). 
+
