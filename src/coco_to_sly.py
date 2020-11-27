@@ -95,7 +95,7 @@ def upload_project_meta(api, project_id, config_yaml_info):
         sly.TagMeta(name='val', value_type=sly.TagValueType.NONE)
     ]
 
-    project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes), tag_metas=sly.TagCollection(items=tags_arr))
+    project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes), tag_metas=sly.TagMetaCollection(items=tags_arr))
 
     api.project.update_meta(project_id, project_meta.to_json())
 
@@ -161,7 +161,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                     labels_arr = []
 
                     tag_meta = project_meta.get_tag_meta(dataset_name)
-                    tags_arr = [sly.Tag(tag_meta)]
+                    tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
 
                     if os.path.isfile(ann_file_name):
                         with open(ann_file_name, 'r') as f:
