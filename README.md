@@ -26,9 +26,12 @@ App transforms folder or `tar` archive with images and labels in [YOLOv5 format]
 
 ## Preparation
 
-1. Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/13frGSuhizrTsot_4ddoMK3llj7O0lKDQ?usp=sharing)) or tar archives (download example).
+Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/13frGSuhizrTsot_4ddoMK3llj7O0lKDQ?usp=sharing)) or tar archives (download example).
 
 ![](https://i.imgur.com/BRA0Bjt.png)
+
+**Note**: Here's the example of how your YOLO v5 project folder or archive tree should look like:
+<img src="https://i.imgur.com/z3VjMnY.png"/>
 
 **Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
@@ -44,8 +47,7 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
         'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 
         'teddy bear', 'hair drier', 'toothbrush']
 ```
-3. Here's the example of how your YOLO v5 project folder or archive should look like:
-<img src="https://i.imgur.com/z3VjMnY.png"/>
+
 
 ## How To Run 
 **Step 1**: Add app to your team from Ecosystem if it is not there. Application will be added to `Current Team`->`PLugins & Apps` page.
