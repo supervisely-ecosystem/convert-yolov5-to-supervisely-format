@@ -26,7 +26,7 @@ App transforms folder or `tar` archive with images and labels in [YOLOv5 format]
 
 ## Preparation
 
-Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/13frGSuhizrTsot_4ddoMK3llj7O0lKDQ?usp=sharing)) or tar archives (download example).
+Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/13frGSuhizrTsot_4ddoMK3llj7O0lKDQ?usp=sharing)) or tar archives ([download example](https://drive.google.com/file/d/1DgmtV7ac0Md9TeSzMJbZ8r77vXC9nk0T/view?usp=sharing)).
 
 ![](https://i.imgur.com/BRA0Bjt.png)
 
