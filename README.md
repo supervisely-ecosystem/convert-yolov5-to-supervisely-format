@@ -65,8 +65,6 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
 **Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`. You will be redirected to `Workspace`->`Tasks` page.
 <img src="https://i.imgur.com/DaXd5Vw.png"/> 
 
-**Note**: Running procedure is simialr for almost all apps that are started from context menu. Example steps with screenshots are [here in how-to-run section](https://github.com/supervisely-ecosystem/merge-classes#how-to-run). 
-
 ## How to use
 
 Project will be available in your current `Workspace` with the same name as the folder or archive with your YOLO v5 project. 
