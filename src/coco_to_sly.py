@@ -175,7 +175,6 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 @my_app.callback("coco_sly_converter")
 @sly.timeit
 def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-    # download dataset files from server files
     storage_dir = my_app.data_dir
     extract_dir = os.path.join(storage_dir, "images_to_convert")
 
@@ -184,7 +183,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     else:
         cur_files_path = INPUT_FILE
 
-    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, "images_to_convert.tar")) #download data
+    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, "images_to_convert.tar"))
     with tarfile.open(os.path.join(storage_dir, "images_to_convert.tar")) as archive:
         archive.extractall(extract_dir)
 
@@ -217,7 +216,6 @@ def main():
         "CONFIG_DIR": os.environ.get("CONFIG_DIR", "ENV not found")
     })
 
-    # Run application service
     my_app.run(initial_events=[{"command": "coco_sly_converter"}])
 
 
