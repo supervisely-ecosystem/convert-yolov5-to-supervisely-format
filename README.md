@@ -73,9 +73,9 @@ Project will be available in your current `Workspace` with the same name as the 
 Application creates 2 datasets `train` and `val`, and applies matching train and val tags to images. 
 If there are no images in your val directory only `train` dataset will be created.
 
-**img**
+<img src="https://i.imgur.com/KFiRU6K.png"/>
 
 You can also access your project by clicking on it's name from `Tasks` page
-<img src="https://i.imgur.com/5BneltN.png"/>
+<img src="https://i.imgur.com/hM2kWVf.png"/>
 
 
