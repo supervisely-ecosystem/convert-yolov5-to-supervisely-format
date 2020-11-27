@@ -30,12 +30,7 @@ App transforms folder or `tar` archive with images and labels in [YOLOv5 format]
 
 ![](https://i.imgur.com/BRA0Bjt.png)
 
-
-
-
-1. You can download [Coco128](https://www.kaggle.com/ultralytics/coco128/download) project or our [lemons](link) project with custom classes
-or create your own project.
-2. YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
+**Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
 ```
 # class names
@@ -50,10 +45,7 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
         'teddy bear', 'hair drier', 'toothbrush']
 ```
 3. Here's the example of how your YOLO v5 project folder or archive should look like:
-<img src="https://i.imgur.com/reiLqjv.png"/>
-
-4. Drag and drop your project or archive to Team Files
-<img src="https://i.imgur.com/W8geV2F.gif"/>
+<img src="https://i.imgur.com/z3VjMnY.png"/>
 
 ## How To Run 
 **Step 1**: Add app to your team from Ecosystem if it is not there. Application will be added to `Current Team`->`PLugins & Apps` page.
