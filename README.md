@@ -39,7 +39,7 @@ train: ../lemons/images/train   # path to train imgs
 val: ../lemons/images/val       # path to val imgs
 ```
 
-**Note**: Here's the example of how your YOLO v5 project folder or archive tree should look like:
+**Project Tree example for Folder and Archive**
 <img src="https://i.imgur.com/z3VjMnY.png"/>
 
 **Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
