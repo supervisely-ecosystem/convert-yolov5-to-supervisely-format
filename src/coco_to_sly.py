@@ -89,7 +89,14 @@ def upload_project_meta(api, project_id, config_yaml_info):
         obj_class = sly.ObjClass(name=class_name, geometry_type=sly.Rectangle, color=yaml_class_color)
         classes.append(obj_class)
 
-    project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes))
+    tags_arr = [
+        sly.TagMeta(name='train', value_type=sly.TagValueType.NONE),
+
+        sly.TagMeta(name='val', value_type=sly.TagValueType.NONE)
+    ]
+
+    project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes), tag_metas=sly.TagCollection(items=tags_arr))
+
     api.project.update_meta(project_id, project_meta.to_json())
 
     return project_meta
@@ -153,13 +160,16 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
                     labels_arr = []
 
+                    tag_meta = project_meta.get_tag_meta(dataset_name)
+                    tags_arr = [sly.Tag(tag_meta)]
+
                     if os.path.isfile(ann_file_name):
                         with open(ann_file_name, 'r') as f:
                             for line in f:
                                 label = parse_line(line, width, height, project_meta, config_yaml_info)
                                 labels_arr.append(label)
 
-                    ann = sly.Annotation(img_size=(height, width), labels=labels_arr)
+                    ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
                     cur_anns_batch.append(ann)
 
                 img_infos = api.image.upload_paths(dataset.id, cur_img_names_batch, cur_img_paths_batch)
@@ -171,6 +181,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
         else:
             app_logger.warn(f"Dataset \"{dataset_name}\" is empty")
+
 
 @my_app.callback("coco_sly_converter")
 @sly.timeit
@@ -202,7 +213,6 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
 
     api.task.set_output_project(task_id, project.id, project.name)
-
 
     my_app.stop()
 
