@@ -69,13 +69,14 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
 
 ## How to use
 
-Project is in your current `Workspace` with the same name as the YOLO v5 folder or archive has. 
-Application creates 2 datasets `train` and `val`, and additionally assigns `train` and `val` tags to images. 
-If there are no images in your val directory only `train` dataset will be created.
+Result project is saved your current `Workspace` with the same name as the YOLO v5 folder or archive has. 
+Application creates 2 datasets: `train` and `val`, and additionally assigns `train` and `val` tags to the images. 
+If there are no images in validasion then only `train` dataset is created.
 
 <img src="https://i.imgur.com/KFiRU6K.png"/>
 
-You can also access your project by clicking on it's name from `Tasks` page
+You can also access your project by clicking on it's name from `Tasks` page.
+
 <img src="https://i.imgur.com/hM2kWVf.png"/>
 
 
