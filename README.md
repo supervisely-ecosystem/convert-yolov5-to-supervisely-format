@@ -30,7 +30,7 @@ Upload images and labels in YOLO v5 format to team files. It is possible to uplo
 
 ![](https://i.imgur.com/BRA0Bjt.png)
 
-**Custom data_config.yaml**
+Example of `data_config.yaml`:
 
 ```yaml
 names: [kiwi, lemon]            # class names
@@ -45,7 +45,8 @@ val: ../lemons/images/val       # path to val imgs
 
 **Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
 or it will use default coco class names:
-```
+
+```yaml
 # class names
 names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
         'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
