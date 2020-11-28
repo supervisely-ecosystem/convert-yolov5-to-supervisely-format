@@ -31,7 +31,8 @@ Upload images and labels in YOLO v5 format to team files. It is possible to uplo
 ![](https://i.imgur.com/BRA0Bjt.png)
 
 **Custom data_config.yaml**
-```
+
+```yaml
 names: [kiwi, lemon]            # class names
 colors: [[255,1,1], [1,255,1]]  # class colors
 nc: 2                           # number of classes
