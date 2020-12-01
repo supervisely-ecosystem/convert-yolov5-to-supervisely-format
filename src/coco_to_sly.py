@@ -7,39 +7,21 @@ import supervisely_lib as sly
 my_app = sly.AppService()
 
 TEAM_ID = os.environ["context.teamId"]
-WORKSPACE_ID = os.environ['context.workspaceId']
+WORKSPACE_ID = os.environ["context.workspaceId"]
 INPUT_DIR = os.environ.get("modal.state.slyFolder")
 INPUT_FILE = os.environ.get("modal.state.slyFile")
 
-DATA_CONFIG_NAME = 'data_config.yaml'
+DATA_CONFIG_NAME = "data_config.yaml"
 
-coco_classes = {0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus',
-                6: 'train', 7: 'truck',
-                8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign',
-                12: 'parking meter',
-                13: 'bench',
-                14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow',
-                20: 'elephant',
-                21: 'bear',
-                22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag',
-                27: 'tie',
-                28: 'suitcase',
-                29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite',
-                34: 'baseball bat',
-                35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket',
-                39: 'bottle',
-                40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl',
-                46: 'banana',
-                47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot',
-                52: 'hot dog',
-                53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch',
-                58: 'potted plant',
-                59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse',
-                65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven',
-                70: 'toaster',
-                71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase',
-                76: 'scissors',
-                77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}
+coco_classes = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+        "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+        "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+        "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+        "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+        "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+        "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard",
+        "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
+        "teddy bear", "hair drier", "toothbrush"]
 
 
 def generate_colors(count):
@@ -48,40 +30,36 @@ def generate_colors(count):
     for _ in range(count):
         new_color = sly.color.generate_rgb(colors)
         colors.append(new_color)
-
     return colors
 
 
-def get_coco_classes_dict(config_yaml):
-    if 'names' in config_yaml:
-        yaml_class_names = config_yaml['names']
-        return {k: v for k, v in enumerate(yaml_class_names)}
-
+def get_coco_names(config_yaml):
+    if "names" in config_yaml:
+        return config_yaml["names"]
     return coco_classes
 
 
 def get_coco_classes_colors(config_yaml, default_count):
-    if 'colors' in config_yaml:
-        yaml_class_colors = config_yaml['colors']
+    if "colors" in config_yaml:
+        yaml_class_colors = config_yaml["colors"]
         return yaml_class_colors
-
     return generate_colors(default_count)
 
 
 def read_config_yaml(config_yaml_path):
-    result = {"names":coco_classes, "colors": None, 'datasets': []}
+    result = {"names": None, "colors": None, "datasets": []}
 
     if not os.path.isfile(config_yaml_path):
-        raise Exception(f'"{DATA_CONFIG_NAME}" not found in "{config_yaml_path}"')
+        raise Exception("{} not found in {}".format(DATA_CONFIG_NAME, config_yaml_path))
 
-    with open(config_yaml_path, 'r') as config_yaml_info:
+    with open(config_yaml_path, "r") as config_yaml_info:
         config_yaml = yaml.safe_load(config_yaml_info)
-        result["names"] = get_coco_classes_dict(config_yaml)
+        result["names"] = get_coco_names(config_yaml)
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
 
-        for t in ['train', 'val']:
+        for t in ["train", "val"]:
           if t in config_yaml:
             cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
             if os.path.isdir(cur_dataset_path):
@@ -95,15 +73,15 @@ def read_config_yaml(config_yaml_path):
 def upload_project_meta(api, project_id, config_yaml_info):
     classes = []
 
-    for class_id, class_name in config_yaml_info["names"].items():
-        yaml_class_color = config_yaml_info['colors'][class_id]
+    for class_id, class_name in enumerate(config_yaml_info["names"]):
+        yaml_class_color = config_yaml_info["colors"][class_id]
         obj_class = sly.ObjClass(name=class_name, geometry_type=sly.Rectangle, color=yaml_class_color)
         classes.append(obj_class)
 
     tags_arr = [
-        sly.TagMeta(name='train', value_type=sly.TagValueType.NONE),
+        sly.TagMeta(name="train", value_type=sly.TagValueType.NONE),
 
-        sly.TagMeta(name='val', value_type=sly.TagValueType.NONE)
+        sly.TagMeta(name="val", value_type=sly.TagValueType.NONE)
     ]
 
     project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes), tag_metas=sly.TagMetaCollection(items=tags_arr))
@@ -141,68 +119,52 @@ def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
         raise Exception("Invalid annotation format")
     else:
         class_id, x_center, y_center, ann_width, ann_height = line_parts
-        class_name = config_yaml_info["names"].get(int(class_id))
-
-        return sly.Label(convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_height),
-                     project_meta.get_obj_class(class_name))
+        class_name = config_yaml_info["names"][int(class_id)]
+        return sly.Label(convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_height), project_meta.get_obj_class(class_name))
 
 
 def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
-
-    for dataset_type, dataset_path in config_yaml_info['datasets']:
-
+    for dataset_type, dataset_path in config_yaml_info["datasets"]:
+        tag_meta = project_meta.get_tag_meta(dataset_type)
         dataset_name = os.path.basename(dataset_path)
-        images_list = sorted(sly.fs.list_files(dataset_path))
 
+        images_list = sorted(sly.fs.list_files(dataset_path))
         if len(images_list) > 0:
             dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
 
-            progress = sly.Progress(f'Processing {dataset_name} dataset', len(images_list), sly.logger)
-
+            progress = sly.Progress("Processing {} dataset".format(dataset_name), len(images_list), sly.logger)
             for batch in sly._utils.batched(images_list):
-                cur_img_names_batch = []
-                cur_img_paths_batch = []
-                cur_anns_batch = []
+                cur_img_names = []
+                cur_img_paths = []
+                cur_anns = []
 
                 for image_file_name in batch:
                     image_name = os.path.basename(image_file_name)
-
-                    cur_img_names_batch.append(image_name)
-                    cur_img_paths_batch.append(image_file_name)
-                    ann_file_name = os.path.join(input_dir, 'labels', dataset_name,
-                                                 f"{os.path.splitext(image_name)[0]}.txt")
-
+                    cur_img_names.append(image_name)
+                    cur_img_paths.append(image_file_name)
+                    ann_file_name = os.path.join(input_dir, "labels", dataset_name, "{}.txt".format(os.path.splitext(image_name)[0]))
                     curr_img = sly.image.read(image_file_name)
                     height, width = curr_img.shape[:2]
 
                     labels_arr = []
-
-                    tag_meta = project_meta.get_tag_meta(dataset_type)
-                    tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
-
                     if os.path.isfile(ann_file_name):
-                        with open(ann_file_name, 'r') as f:
-                            line_num = 0
-
-                            for line in f:
-                                line_num += 1
-
+                        with open(ann_file_name, "r") as f:
+                            for idx, line in enumerate(f):
                                 try:
-                                  label = parse_line(line, width, height, project_meta, config_yaml_info)
-                                  labels_arr.append(label)
+                                    label = parse_line(line, width, height, project_meta, config_yaml_info)
+                                    labels_arr.append(label)
                                 except Exception as e:
-                                    app_logger.warn(e, { 'filename': ann_file_name, 'line': line, 'line_num': line_num })
+                                    app_logger.warn(e, {"filename": ann_file_name, "line": line, "line_num": idx})
 
+                    tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
                     ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
-                    cur_anns_batch.append(ann)
+                    cur_anns.append(ann)
 
-                img_infos = api.image.upload_paths(dataset.id, cur_img_names_batch, cur_img_paths_batch)
+                img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
                 img_ids = [x.id for x in img_infos]
 
-                api.annotation.upload_anns(img_ids, cur_anns_batch)
-
+                api.annotation.upload_anns(img_ids, cur_anns)
                 progress.iters_done_report(len(batch))
-
         else:
             app_logger.warn(f"Dataset \"{dataset_name}\" is empty")
 
@@ -210,7 +172,6 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 @my_app.callback("coco_sly_converter")
 @sly.timeit
 def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-
     storage_dir = my_app.data_dir
 
     if INPUT_DIR:
@@ -233,7 +194,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     input_dir = extract_dir
 
     if INPUT_DIR:
-       cur_files_path = cur_files_path.rstrip('/')
+       cur_files_path = cur_files_path.rstrip("/")
        input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
 
     project_name = sly.fs.get_file_name(cur_files_path)
@@ -255,7 +216,7 @@ def main():
         "context.workspaceId": WORKSPACE_ID,
         "modal.state.slyFolder": INPUT_DIR,
         "modal.state.slyFile": INPUT_FILE,
-        "CONFIG_DIR": os.environ.get("CONFIG_DIR", "ENV not found")
+        "CONFIG_DIR": os.environ.get("CONFIG_DIR", None)
     })
 
     my_app.run(initial_events=[{"command": "coco_sly_converter"}])
