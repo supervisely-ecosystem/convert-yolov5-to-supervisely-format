@@ -7,7 +7,7 @@
   ],
   "description": "Transform YOLO v5 format to supervisely project",
   "docker_image": "supervisely/convert-supervisely-to-yolov5",
-  "main_script": "src/coco_to_sly.py",
+  "main_script": "src/convert_yolov5_to_sly.py",
   "task_location": "workspace_tasks",
   "icon": "https://i.imgur.com/Zkr2Lix.png",
   "icon_background": "#FFFFFF",
