@@ -58,7 +58,6 @@ def read_config_yaml(config_yaml_path):
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
-
         for t in ["train", "val"]:
           if t in config_yaml:
             cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
@@ -67,6 +66,8 @@ def read_config_yaml(config_yaml_path):
             else:
                 raise Exception("No such Directory:{}".format(cur_dataset_path))
 
+        if len(result["datasets"]) == 2 and config_yaml["train"] == config_yaml["val"]:
+            raise Exception("'train' and 'val' paths are equal in data_config.yaml")
     return result
 
 
