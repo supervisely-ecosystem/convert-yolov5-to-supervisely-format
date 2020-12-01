@@ -6,14 +6,10 @@ import supervisely_lib as sly
 
 my_app = sly.AppService()
 
-if "DEBUG_APP_DIR" in os.environ:
-    my_app._session_dir = os.environ['DEBUG_APP_DIR']
-
 TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ['context.workspaceId']
-INPUT_DIR = None #os.environ.get("modal.state.slyFolder")
+INPUT_DIR = os.environ.get("modal.state.slyFolder")
 INPUT_FILE = os.environ.get("modal.state.slyFile")
-
 
 DATA_CONFIG_NAME = 'data_config.yaml'
 
@@ -45,6 +41,7 @@ coco_classes = {0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airpla
                 76: 'scissors',
                 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}
 
+
 def generate_colors(count):
     colors = []
 
@@ -72,7 +69,7 @@ def get_coco_classes_colors(config_yaml, default_count):
 
 
 def read_config_yaml(config_yaml_path):
-    result = { "names":coco_classes, "colors":None, 'datasets': [] }
+    result = {"names":coco_classes, "colors":None, 'datasets': []}
 
     if not os.path.isfile(config_yaml_path):
         raise Exception(f'"{DATA_CONFIG_NAME}" not found in "{config_yaml_path}"')
@@ -213,20 +210,21 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 @my_app.callback("coco_sly_converter")
 @sly.timeit
 def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-    storage_dir = my_app.data_dir
-    extract_dir = os.path.join(storage_dir, "images_to_convert")
-    archive_dir = os.path.join(storage_dir, "images_to_convert.tar")
 
     if INPUT_DIR:
         cur_files_path = INPUT_DIR
     else:
         cur_files_path = INPUT_FILE
 
-    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, "images_to_convert.tar"))
+    storage_dir = my_app.data_dir
+    extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
+    archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
+
+    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, cur_files_path.lstrip("/")))
     print(storage_dir)
 
-    if tarfile.is_tarfile(archive_dir):
-        with tarfile.open(archive_dir) as archive:
+    if tarfile.is_tarfile(archive_path):
+        with tarfile.open(archive_path) as archive:
              archive.extractall(extract_dir)
     else:
         raise Exception("No such file".format(INPUT_FILE))
@@ -234,9 +232,8 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     input_dir = extract_dir
 
     if INPUT_DIR:
-      cur_files_path = cur_files_path.rstrip('/')
-      input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
-      print(input_dir)
+       cur_files_path = cur_files_path.rstrip('/')
+       input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
 
     project_name = sly.fs.get_file_name(cur_files_path)
 
