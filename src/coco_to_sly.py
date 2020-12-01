@@ -69,7 +69,7 @@ def get_coco_classes_colors(config_yaml, default_count):
 
 
 def read_config_yaml(config_yaml_path):
-    result = {"names":coco_classes, "colors":None, 'datasets': []}
+    result = {"names":coco_classes, "colors": None, 'datasets': []}
 
     if not os.path.isfile(config_yaml_path):
         raise Exception(f'"{DATA_CONFIG_NAME}" not found in "{config_yaml_path}"')
@@ -211,14 +211,16 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 @sly.timeit
 def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
+    storage_dir = my_app.data_dir
+
     if INPUT_DIR:
         cur_files_path = INPUT_DIR
+        extract_dir = storage_dir
+        archive_path = storage_dir + (cur_files_path.rstrip("/") + ".tar")
     else:
         cur_files_path = INPUT_FILE
-
-    storage_dir = my_app.data_dir
-    extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
-    archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
+        extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
+        archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
 
     api.file.download(TEAM_ID, cur_files_path, archive_path)
 
