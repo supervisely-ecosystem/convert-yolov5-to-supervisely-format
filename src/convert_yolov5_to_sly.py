@@ -170,33 +170,42 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
             app_logger.warn(f"Dataset \"{dataset_name}\" is empty")
 
 
-@my_app.callback("yolo_sly_converter")
+@my_app.callback("yolov5_sly_converter")
 @sly.timeit
-def yolo_sly_converter(api: sly.Api, task_id, context, state, app_logger):
+def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     storage_dir = my_app.data_dir
-    download_path = INPUT_DIR if INPUT_DIR else INPUT_FILE
-    norm_download_path = download_path.strip('/')
-
-    project_name = sly.fs.get_file_name(norm_download_path)
-
-    extract_dir = os.path.join(storage_dir, project_name)
-    archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(norm_download_path))
 
     if INPUT_DIR:
-        archive_path += ".tar"
+        cur_files_path = INPUT_DIR
+        extract_dir = storage_dir
+        archive_path = storage_dir + (cur_files_path.rstrip("/") + ".tar")
+    else:
+        cur_files_path = INPUT_FILE
+        extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
+        archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
 
-    api.file.download(TEAM_ID, download_path, archive_path)
+    api.file.download(TEAM_ID, cur_files_path, archive_path)
+
     if tarfile.is_tarfile(archive_path):
         with tarfile.open(archive_path) as archive:
              archive.extractall(extract_dir)
     else:
         raise Exception("No such file".format(INPUT_FILE))
 
-    config_yaml_info = read_config_yaml(os.path.join(extract_dir, DATA_CONFIG_NAME))
+    input_dir = extract_dir
+
+    if INPUT_DIR:
+       cur_files_path = cur_files_path.rstrip("/")
+       input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
+
+    project_name = sly.fs.get_file_name(cur_files_path)
+
+    config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME))
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     project_meta = upload_project_meta(api, project.id, config_yaml_info)
 
-    process_coco_dir(extract_dir, project, project_meta, api, config_yaml_info, app_logger)
+    process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
+
     api.task.set_output_project(task_id, project.id, project.name)
 
     my_app.stop()
@@ -211,7 +220,7 @@ def main():
         "CONFIG_DIR": os.environ.get("CONFIG_DIR", None)
     })
 
-    my_app.run(initial_events=[{"command": "yolo_sly_converter"}])
+    my_app.run(initial_events=[{"command": "yolov5_sly_converter"}])
 
 
 if __name__ == "__main__":
