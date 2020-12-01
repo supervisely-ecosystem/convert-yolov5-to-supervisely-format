@@ -220,8 +220,7 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
     archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
 
-    api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, cur_files_path.lstrip("/")))
-    print(storage_dir)
+    api.file.download(TEAM_ID, cur_files_path, archive_path)
 
     if tarfile.is_tarfile(archive_path):
         with tarfile.open(archive_path) as archive:
