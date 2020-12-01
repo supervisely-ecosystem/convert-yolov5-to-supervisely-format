@@ -6,10 +6,14 @@ import supervisely_lib as sly
 
 my_app = sly.AppService()
 
+if "DEBUG_APP_DIR" in os.environ:
+    my_app._session_dir = os.environ['DEBUG_APP_DIR']
+
 TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ['context.workspaceId']
-INPUT_DIR = os.environ.get("modal.state.slyFolder")
+INPUT_DIR = None #os.environ.get("modal.state.slyFolder")
 INPUT_FILE = os.environ.get("modal.state.slyFile")
+
 
 DATA_CONFIG_NAME = 'data_config.yaml'
 
@@ -68,15 +72,25 @@ def get_coco_classes_colors(config_yaml, default_count):
 
 
 def read_config_yaml(config_yaml_path):
-    result = {"names":coco_classes, "colors":None}
+    result = { "names":coco_classes, "colors":None, 'datasets': [] }
 
-    if os.path.isfile(config_yaml_path):
-        with open(config_yaml_path, 'r') as config_yaml_info:
-            config_yaml = yaml.safe_load(config_yaml_info)
-            result["names"] = get_coco_classes_dict(config_yaml)
-            result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
-    else:
-        result["colors"] = generate_colors(len(result["names"]))
+    if not os.path.isfile(config_yaml_path):
+        raise Exception(f'"{DATA_CONFIG_NAME}" not found in "{config_yaml_path}"')
+
+    with open(config_yaml_path, 'r') as config_yaml_info:
+        config_yaml = yaml.safe_load(config_yaml_info)
+        result["names"] = get_coco_classes_dict(config_yaml)
+        result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
+
+        conf_dirname = os.path.dirname(config_yaml_path)
+
+        for t in ['train', 'val']:
+          if t in config_yaml:
+            cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
+            if os.path.isdir(cur_dataset_path):
+                result["datasets"].append((t, cur_dataset_path))
+            else:
+                raise Exception("No such Directory:{}".format(cur_dataset_path))
 
     return result
 
@@ -124,21 +138,27 @@ def convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_h
 
 
 def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
-    class_id, x_center, y_center, ann_width, ann_height = line.split()
-    class_name = config_yaml_info["names"].get(int(class_id))
+    line_parts = line.split()
 
-    return sly.Label(convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_height),
+    if len(line_parts) != 5:
+        raise Exception("Invalid annotation format")
+    else:
+        class_id, x_center, y_center, ann_width, ann_height = line_parts
+        class_name = config_yaml_info["names"].get(int(class_id))
+
+        return sly.Label(convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_height),
                      project_meta.get_obj_class(class_name))
 
 
 def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
-    datasets_dir = os.path.join(input_dir, 'images')
 
-    for dataset_name in sly.fs.get_subdirs(datasets_dir):
-        images_list = sorted(sly.fs.list_files(os.path.join(datasets_dir, dataset_name)))
+    for dataset_type, dataset_path in config_yaml_info['datasets']:
+
+        dataset_name = os.path.basename(dataset_path)
+        images_list = sorted(sly.fs.list_files(dataset_path))
 
         if len(images_list) > 0:
-            dataset = api.dataset.create(project.id, dataset_name)
+            dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
 
             progress = sly.Progress(f'Processing {dataset_name} dataset', len(images_list), sly.logger)
 
@@ -160,14 +180,21 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
                     labels_arr = []
 
-                    tag_meta = project_meta.get_tag_meta(dataset_name)
+                    tag_meta = project_meta.get_tag_meta(dataset_type)
                     tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
 
                     if os.path.isfile(ann_file_name):
                         with open(ann_file_name, 'r') as f:
+                            line_num = 0
+
                             for line in f:
-                                label = parse_line(line, width, height, project_meta, config_yaml_info)
-                                labels_arr.append(label)
+                                line_num += 1
+
+                                try:
+                                  label = parse_line(line, width, height, project_meta, config_yaml_info)
+                                  labels_arr.append(label)
+                                except Exception as e:
+                                    app_logger.warn(e, { 'filename': ann_file_name, 'line': line, 'line_num': line_num })
 
                     ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
                     cur_anns_batch.append(ann)
@@ -188,6 +215,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     storage_dir = my_app.data_dir
     extract_dir = os.path.join(storage_dir, "images_to_convert")
+    archive_dir = os.path.join(storage_dir, "images_to_convert.tar")
 
     if INPUT_DIR:
         cur_files_path = INPUT_DIR
@@ -195,14 +223,20 @@ def coco_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         cur_files_path = INPUT_FILE
 
     api.file.download(TEAM_ID, cur_files_path, os.path.join(storage_dir, "images_to_convert.tar"))
-    with tarfile.open(os.path.join(storage_dir, "images_to_convert.tar")) as archive:
-        archive.extractall(extract_dir)
+    print(storage_dir)
+
+    if tarfile.is_tarfile(archive_dir):
+        with tarfile.open(archive_dir) as archive:
+             archive.extractall(extract_dir)
+    else:
+        raise Exception("No such file".format(INPUT_FILE))
 
     input_dir = extract_dir
 
     if INPUT_DIR:
       cur_files_path = cur_files_path.rstrip('/')
       input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
+      print(input_dir)
 
     project_name = sly.fs.get_file_name(cur_files_path)
 
