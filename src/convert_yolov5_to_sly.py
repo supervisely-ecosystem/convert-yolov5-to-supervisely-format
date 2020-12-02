@@ -33,9 +33,10 @@ def generate_colors(count):
     return colors
 
 
-def get_coco_names(config_yaml):
+def get_coco_names(config_yaml, app_logger):
     if "names" in config_yaml:
         return config_yaml["names"]
+    app_logger.warn("['names'] field is empty in data_config.yaml. Class names will be taken from default coco class names")
     return coco_classes
 
 
@@ -64,13 +65,13 @@ def read_config_yaml(config_yaml_path, app_logger):
             if os.path.isdir(cur_dataset_path):
                 result["datasets"].append((t, cur_dataset_path))
             else:
-                app_logger.warn("No such Directory:{}. Directory is missing in your project folder or have wrong path in data_config.yaml. Directory will be skipped".format(cur_dataset_path))
+                app_logger.warn("No such Directory: {}. Directory is missing in your project folder or have wrong path in data_config.yaml. Directory will be skipped".format(cur_dataset_path))
 
         if len(result["datasets"]) == 0:
             raise Exception("No datasets given, check your project Directory or Archive")
 
         if len(result["datasets"]) == 2 and config_yaml["train"] == config_yaml["val"]:
-            raise Exception("'train' and 'val' paths are equal in data_config.yaml")
+            app_logger.warn("'train' and 'val' paths for images are equal in data_config.yaml. Images will be uploaded to 'train' dataset")
     return result
 
 
@@ -170,7 +171,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                 api.annotation.upload_anns(img_ids, cur_anns)
                 progress.iters_done_report(len(batch))
         else:
-            app_logger.warn(f"Dataset \"{dataset_name}\" is empty")
+            app_logger.warn("Dataset: {} is empty".format(dataset_name))
 
 
 @my_app.callback("yolov5_sly_converter")
