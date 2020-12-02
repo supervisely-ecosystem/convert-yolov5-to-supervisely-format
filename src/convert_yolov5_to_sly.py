@@ -59,7 +59,7 @@ def read_config_yaml(config_yaml_path, app_logger):
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
         if result["names"] == coco_classes:
-            app_logger.warn("specified {} colors and {} classes in {}. New colors will be generated for classes.".format(len(config_yaml["colors"]), len(result["names"]), DATA_CONFIG_NAME))
+#           app_logger.warn("specified {} colors and {} classes in {}. New colors will be generated for classes.".format(len(config_yaml["colors"]), len(result["names"]), DATA_CONFIG_NAME))
             result["colors"] = generate_colors(len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
@@ -71,7 +71,7 @@ def read_config_yaml(config_yaml_path, app_logger):
                cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
                if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
-                   app_logger.warn("'train' and 'val' paths for images are equal in {}. Images will be uploaded from 'train' dataset".format(DATA_CONFIG_NAME))
+                   app_logger.warn("'train' and 'val' paths for images are the same in {}. Images will be uploaded from 'train' dataset".format(DATA_CONFIG_NAME))
                    continue
 
                if os.path.isdir(cur_dataset_path):
@@ -79,9 +79,8 @@ def read_config_yaml(config_yaml_path, app_logger):
                else:
                    raise Exception("No such Directory: {}. Directory is missing in your project folder or have wrong path in {}. Directory will be skipped".format(cur_dataset_path, DATA_CONFIG_NAME))
 
-        if len(result["datasets"]) == 0:
-            raise Exception("No datasets given, check your project Directory or Archive")
-
+               if len(result["datasets"]) == 0:
+                   raise Exception("No datasets given, check your project Directory or Archive")
 
     return result
 
