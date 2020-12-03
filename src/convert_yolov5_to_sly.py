@@ -58,8 +58,16 @@ def read_config_yaml(config_yaml_path, app_logger):
         result["names"] = get_coco_names(config_yaml, app_logger)
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
-        if result["names"] == coco_classes:
-#           app_logger.warn("specified {} colors and {} classes in {}. New colors will be generated for classes.".format(len(config_yaml["colors"]), len(result["names"]), DATA_CONFIG_NAME))
+        if config_yaml.get("nc") not in config_yaml:
+            app_logger.warn("Number of classes not specified in {} while actual number of classes is {}.".format(DATA_CONFIG_NAME, len(result["names"])))
+        elif config_yaml.get("nc", []) != len(result["names"]):
+            app_logger.warn("Specified number of classes {} doesn't match with actual number of classes {} given in {}".format(config_yaml.get("nc", int), len(result["names"]), DATA_CONFIG_NAME))
+
+        if len(config_yaml.get("colors", [])) == 0:
+            app_logger.warn("No colors specified in {}. Colors will be generated for classes automatically.".format(DATA_CONFIG_NAME))
+            result["colors"] = generate_colors(len(result["names"]))
+        elif result["names"] == coco_classes or len(result["names"]) != len(config_yaml.get("colors")):
+            app_logger.warn("Specified {} colors and {} classes in {}. New colors will be generated for classes automatically.".format(len(config_yaml.get("colors", [])), len(result["names"]), DATA_CONFIG_NAME))
             result["colors"] = generate_colors(len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
