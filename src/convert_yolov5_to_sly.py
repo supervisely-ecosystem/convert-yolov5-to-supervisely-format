@@ -58,7 +58,7 @@ def read_config_yaml(config_yaml_path, app_logger):
         result["names"] = get_coco_names(config_yaml, app_logger)
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
-        if config_yaml.get("nc") not in config_yaml:
+        if "nc" not in config_yaml:
             app_logger.warn("Number of classes not specified in {} while actual number of classes is {}.".format(DATA_CONFIG_NAME, len(result["names"])))
         elif config_yaml.get("nc", []) != len(result["names"]):
             app_logger.warn("Specified number of classes {} doesn't match with actual number of classes {} given in {}".format(config_yaml.get("nc", int), len(result["names"]), DATA_CONFIG_NAME))
