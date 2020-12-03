@@ -68,22 +68,23 @@ def read_config_yaml(config_yaml_path, app_logger):
         conf_dirname = os.path.dirname(config_yaml_path)
         for t in ["train", "val"]:
             if t not in config_yaml:
-                raise Exception('{} path is not defined in {!r}'.format(t, DATA_CONFIG_NAME))
+                raise Exception('{!r} path is not defined in {!r}'.format(t, DATA_CONFIG_NAME))
 
             if t in config_yaml:
                cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
                if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
-                   app_logger.warn("'train' and 'val' paths for images are the same in {}. Images will be uploaded from 'train' dataset".format(DATA_CONFIG_NAME))
+                   app_logger.warn("'train' and 'val' paths for images are the same in {}. Images will be uploaded to 'train' dataset".format(DATA_CONFIG_NAME))
                    continue
 
                if os.path.isdir(cur_dataset_path):
                    result["datasets"].append((t, cur_dataset_path))
-               else:
-                   raise Exception("Directory: {!r} not found.".format(cur_dataset_path))
 
-               if len(result["datasets"]) == 0:
+               elif len(result["datasets"]) == 0:
                    raise Exception("No datasets given, check your project Directory or Archive")
+
+               elif len(result["datasets"]) == 1:
+                   raise Exception("Directory: {!r} not found.".format(cur_dataset_path))
 
     return result
 
