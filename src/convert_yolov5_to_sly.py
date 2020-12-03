@@ -26,7 +26,6 @@ coco_classes = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "tr
 
 def generate_colors(count):
     colors = []
-
     for _ in range(count):
         new_color = sly.color.generate_rgb(colors)
         colors.append(new_color)
@@ -34,24 +33,20 @@ def generate_colors(count):
 
 
 def get_coco_names(config_yaml, app_logger):
-    if "names" in config_yaml:
-        return config_yaml["names"]
-    app_logger.warn("['names'] key is empty in {}. Class names will be taken from default coco classes names".format(DATA_CONFIG_NAME))
-    return coco_classes
+    if "names" not in config_yaml:
+        app_logger.warn("['names'] key is empty in {}. Class names will be taken from default coco classes names".format(DATA_CONFIG_NAME))
+    return config_yaml.get("names", coco_classes)
 
 
 def get_coco_classes_colors(config_yaml, default_count):
-    if "colors" in config_yaml:
-        yaml_class_colors = config_yaml["colors"]
-        return yaml_class_colors
-    return generate_colors(default_count)
+    return config_yaml.get("colors", generate_colors(default_count))
 
 
 def read_config_yaml(config_yaml_path, app_logger):
     result = {"names": None, "colors": None, "datasets": []}
 
     if not os.path.isfile(config_yaml_path):
-        raise Exception("{} not found in {}".format(DATA_CONFIG_NAME, config_yaml_path))
+        raise Exception("File {!r} not found".format(config_yaml_path))
 
     with open(config_yaml_path, "r") as config_yaml_info:
         config_yaml = yaml.safe_load(config_yaml_info)
@@ -59,21 +54,21 @@ def read_config_yaml(config_yaml_path, app_logger):
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
         if "nc" not in config_yaml:
-            app_logger.warn("Number of classes not specified in {} while actual number of classes is {}.".format(DATA_CONFIG_NAME, len(result["names"])))
+            app_logger.warn("Number of classes is not defined in {}. Actual number of classes is {}.".format(DATA_CONFIG_NAME, len(result["names"])))
         elif config_yaml.get("nc", []) != len(result["names"]):
-            app_logger.warn("Specified number of classes {} doesn't match with actual number of classes {} given in {}".format(config_yaml.get("nc", int), len(result["names"]), DATA_CONFIG_NAME))
+            app_logger.warn("Defined number of classes {} doesn't match with actual number of classes {}".format(config_yaml.get("nc", int), len(result["names"]), DATA_CONFIG_NAME))
 
         if len(config_yaml.get("colors", [])) == 0:
-            app_logger.warn("No colors specified in {}. Colors will be generated for classes automatically.".format(DATA_CONFIG_NAME))
+            app_logger.warn("Colors not found in {}. Colors will be generated for classes automatically.".format(DATA_CONFIG_NAME))
             result["colors"] = generate_colors(len(result["names"]))
         elif result["names"] == coco_classes or len(result["names"]) != len(config_yaml.get("colors")):
-            app_logger.warn("Specified {} colors and {} classes in {}. New colors will be generated for classes automatically.".format(len(config_yaml.get("colors", [])), len(result["names"]), DATA_CONFIG_NAME))
+            app_logger.warn("len(config_yaml['colors']) !=  len(config_yaml['names']). New colors will be generated for classes automatically.")
             result["colors"] = generate_colors(len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
         for t in ["train", "val"]:
             if t not in config_yaml:
-                raise Exception('{} path is not specified in {}'.format(t, DATA_CONFIG_NAME))
+                raise Exception('{} path is not defined in {!r}'.format(t, DATA_CONFIG_NAME))
 
             if t in config_yaml:
                cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
@@ -85,7 +80,7 @@ def read_config_yaml(config_yaml_path, app_logger):
                if os.path.isdir(cur_dataset_path):
                    result["datasets"].append((t, cur_dataset_path))
                else:
-                   raise Exception("No such Directory: {}. Directory is missing in your project folder or have wrong path in {}. Directory will be skipped".format(cur_dataset_path, DATA_CONFIG_NAME))
+                   raise Exception("Directory: {!r} not found.".format(cur_dataset_path))
 
                if len(result["datasets"]) == 0:
                    raise Exception("No datasets given, check your project Directory or Archive")
@@ -95,7 +90,6 @@ def read_config_yaml(config_yaml_path, app_logger):
 
 def upload_project_meta(api, project_id, config_yaml_info):
     classes = []
-
     for class_id, class_name in enumerate(config_yaml_info["names"]):
         yaml_class_color = config_yaml_info["colors"][class_id]
         obj_class = sly.ObjClass(name=class_name, geometry_type=sly.Rectangle, color=yaml_class_color)
@@ -103,14 +97,10 @@ def upload_project_meta(api, project_id, config_yaml_info):
 
     tags_arr = [
         sly.TagMeta(name="train", value_type=sly.TagValueType.NONE),
-
         sly.TagMeta(name="val", value_type=sly.TagValueType.NONE)
     ]
-
     project_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(items=classes), tag_metas=sly.TagMetaCollection(items=tags_arr))
-
     api.project.update_meta(project_id, project_meta.to_json())
-
     return project_meta
 
 
@@ -137,7 +127,6 @@ def convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_h
 
 def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
     line_parts = line.split()
-
     if len(line_parts) != 5:
         raise Exception("Invalid annotation format")
     else:
@@ -152,51 +141,49 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
         dataset_name = os.path.basename(dataset_path)
 
         images_list = sorted(sly.fs.list_files(dataset_path))
-        if len(images_list) > 0:
-            dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
+        if len(images_list) == 0:
+            raise Exception("Dataset: {!r} is empty. Check {!r} directory in project folder".format(dataset_name, dataset_path))
 
-            progress = sly.Progress("Processing {} dataset".format(dataset_name), len(images_list), sly.logger)
-            for batch in sly._utils.batched(images_list):
-                cur_img_names = []
-                cur_img_paths = []
-                cur_anns = []
+        dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
+        progress = sly.Progress("Processing {} dataset".format(dataset_name), len(images_list), sly.logger)
+        for batch in sly._utils.batched(images_list):
+            cur_img_names = []
+            cur_img_paths = []
+            cur_anns = []
 
-                for image_file_name in batch:
-                    image_name = os.path.basename(image_file_name)
-                    cur_img_names.append(image_name)
-                    cur_img_paths.append(image_file_name)
-                    ann_file_name = os.path.join(input_dir, "labels", dataset_name, "{}.txt".format(os.path.splitext(image_name)[0]))
-                    curr_img = sly.image.read(image_file_name)
-                    height, width = curr_img.shape[:2]
+            for image_file_name in batch:
+                image_name = os.path.basename(image_file_name)
+                cur_img_names.append(image_name)
+                cur_img_paths.append(image_file_name)
+                ann_file_name = os.path.join(input_dir, "labels", dataset_name, "{}.txt".format(os.path.splitext(image_name)[0]))
+                curr_img = sly.image.read(image_file_name)
+                height, width = curr_img.shape[:2]
 
-                    labels_arr = []
-                    if os.path.isfile(ann_file_name):
-                        with open(ann_file_name, "r") as f:
-                            for idx, line in enumerate(f):
-                                try:
-                                    label = parse_line(line, width, height, project_meta, config_yaml_info)
-                                    labels_arr.append(label)
-                                except Exception as e:
-                                    app_logger.warn(e, {"filename": ann_file_name, "line": line, "line_num": idx})
+                labels_arr = []
+                if os.path.isfile(ann_file_name):
+                    with open(ann_file_name, "r") as f:
+                        for idx, line in enumerate(f):
+                            try:
+                                label = parse_line(line, width, height, project_meta, config_yaml_info)
+                                labels_arr.append(label)
+                            except Exception as e:
+                                app_logger.warn(e, {"filename": ann_file_name, "line": line, "line_num": idx})
 
-                    tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
-                    ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
-                    cur_anns.append(ann)
+                tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
+                ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
+                cur_anns.append(ann)
 
-                img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
-                img_ids = [x.id for x in img_infos]
+            img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
+            img_ids = [x.id for x in img_infos]
 
-                api.annotation.upload_anns(img_ids, cur_anns)
-                progress.iters_done_report(len(batch))
-        else:
-            raise Exception("Dataset: {} is empty. Check your {} directory in project folder".format(dataset_name, dataset_name))
+            api.annotation.upload_anns(img_ids, cur_anns)
+            progress.iters_done_report(len(batch))
 
 
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     storage_dir = my_app.data_dir
-
     if INPUT_DIR:
         cur_files_path = INPUT_DIR
         extract_dir = storage_dir
@@ -207,7 +194,6 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
 
     api.file.download(TEAM_ID, cur_files_path, archive_path)
-
     if tarfile.is_tarfile(archive_path):
         with tarfile.open(archive_path) as archive:
              archive.extractall(extract_dir)
@@ -215,21 +201,16 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         raise Exception("No such file".format(INPUT_FILE))
 
     input_dir = extract_dir
-
     if INPUT_DIR:
        cur_files_path = cur_files_path.rstrip("/")
        input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
 
     project_name = sly.fs.get_file_name(cur_files_path)
-
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME), app_logger)
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     project_meta = upload_project_meta(api, project.id, config_yaml_info)
-
     process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
-
     api.task.set_output_project(task_id, project.id, project.name)
-
     my_app.stop()
 
 
