@@ -1,6 +1,7 @@
 import os
 import yaml
 import tarfile
+from pathlib import Path
 
 import supervisely_lib as sly
 
@@ -141,7 +142,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
         tag_meta = project_meta.get_tag_meta(dataset_type)
         dataset_name = os.path.basename(dataset_path)
 
-        images_list = sorted(sly.fs.list_files(dataset_path))
+        images_list = sorted(sly.fs.list_files(dataset_path, valid_extensions=sly.image.SUPPORTED_IMG_EXTS))
         if len(images_list) == 0:
             raise Exception("Dataset: {!r} is empty. Check {!r} directory in project folder".format(dataset_name, dataset_path))
 
@@ -187,12 +188,16 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     storage_dir = my_app.data_dir
     if INPUT_DIR:
         cur_files_path = INPUT_DIR
-        extract_dir = storage_dir
-        archive_path = storage_dir + (cur_files_path.rstrip("/") + ".tar")
+        extract_dir = os.path.join(storage_dir, str(Path(cur_files_path).parent).lstrip("/"))
+        input_dir = os.path.join(extract_dir, Path(cur_files_path).name)
+        archive_path = os.path.join(storage_dir, cur_files_path.strip("/") + ".tar")
+        project_name = Path(cur_files_path).name
     else:
         cur_files_path = INPUT_FILE
         extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
         archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
+        input_dir = extract_dir
+        project_name = sly.fs.get_file_name_with_ext(INPUT_FILE)
 
     api.file.download(TEAM_ID, cur_files_path, archive_path)
     if tarfile.is_tarfile(archive_path):
@@ -201,12 +206,6 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     else:
         raise Exception("No such file".format(INPUT_FILE))
 
-    input_dir = extract_dir
-    if INPUT_DIR:
-       cur_files_path = cur_files_path.rstrip("/")
-       input_dir = os.path.join(input_dir, cur_files_path.lstrip("/"))
-
-    project_name = sly.fs.get_file_name(cur_files_path)
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME), app_logger)
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     project_meta = upload_project_meta(api, project.id, config_yaml_info)
