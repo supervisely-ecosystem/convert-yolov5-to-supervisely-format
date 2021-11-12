@@ -69,9 +69,9 @@ names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
 
 ## How to use
 
-Result project is saved your current `Workspace` with the same name as the YOLO v5 folder or archive has. 
+Result project will be saved to your current `Workspace` with the same name as the YOLO v5 folder or archive has. 
 Application creates 2 datasets: `train` and `val`, and additionally assigns `train` and `val` tags to the images. 
-If there are no images in validasion then only `train` dataset is created.
+If there are no images in `val` then only `train` dataset is created.
 
 <img src="https://i.imgur.com/KFiRU6K.png"/>
 
