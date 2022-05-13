@@ -2,8 +2,9 @@
   "name": "Convert YOLO v5 to Supervisely format",
   "type": "app",
   "categories": [
+    "import",
     "yolov5",
-    "convert format"
+    "images"
   ],
   "description": "Transform YOLO v5 format to supervisely project",
   "docker_image": "supervisely/base-py-sdk:6.1.45",
