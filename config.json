@@ -3,7 +3,6 @@
   "type": "app",
   "categories": [
     "import",
-    "yolov5",
     "images"
   ],
   "description": "Transform YOLO v5 format to supervisely project",
