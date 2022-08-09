@@ -1,6 +1,6 @@
 <div align="center" markdown>
 
-<img src="https://i.imgur.com/1YEjnZa.png"/>
+<img src="https://user-images.githubusercontent.com/106374579/183676537-6b87c794-aab1-40c8-b61a-898f317256c3.png"/>
 
 # Convert YOLOv5 to Supervisely format
 
