@@ -202,7 +202,26 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     api.file.download(TEAM_ID, cur_files_path, archive_path)
     if tarfile.is_tarfile(archive_path):
         with tarfile.open(archive_path) as archive:
-             archive.extractall(extract_dir)
+             def is_within_directory(directory, target):
+                 
+                 abs_directory = os.path.abspath(directory)
+                 abs_target = os.path.abspath(target)
+             
+                 prefix = os.path.commonprefix([abs_directory, abs_target])
+                 
+                 return prefix == abs_directory
+             
+             def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+             
+                 for member in tar.getmembers():
+                     member_path = os.path.join(path, member.name)
+                     if not is_within_directory(path, member_path):
+                         raise Exception("Attempted Path Traversal in Tar File")
+             
+                 tar.extractall(path, members, numeric_owner=numeric_owner) 
+                 
+             
+             safe_extract(archive, extract_dir)
     else:
         raise Exception("No such file".format(INPUT_FILE))
 
