@@ -9,12 +9,6 @@ import supervisely_lib as sly
 # from dotenv import load_dotenv
 # load_dotenv("debug.env")
 
-print("------------------------All env variables:")
-for key, value in os.environ.items():
-    print(f"{key}: {value}")
-print("------------------------Finished printing env variables.")
-
-
 my_app = sly.AppService()
 
 TEAM_ID = os.environ["context.teamId"]
