@@ -344,10 +344,18 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     sly.logger.info(
         f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}."
     )
+    global INPUT_DIR
 
     storage_dir = my_app.data_dir
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
+
+        # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
+        if not INPUT_DIR.endswith("/"):
+            sly.logger.warning(
+                "The path to the import dir from env variable does not end with slash. Adding it."
+            )
+            INPUT_DIR += "/"
 
         sly.logger.info("The app is launched from directory (not archive file).")
 
