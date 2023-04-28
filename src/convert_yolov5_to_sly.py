@@ -3,10 +3,10 @@ import yaml
 import tarfile
 from pathlib import Path
 
-# from dotenv import load_dotenv
-
 import supervisely_lib as sly
 
+# Uncomment for local debug.
+# from dotenv import load_dotenv
 # load_dotenv("debug.env")
 
 my_app = sly.AppService()
@@ -195,8 +195,9 @@ def read_config_yaml(config_yaml_path, app_logger):
                     )
 
                 elif len(result["datasets"]) == 1:
-                    raise Exception(
-                        "Directory: {!r} not found.".format(cur_dataset_path)
+                    os.makedirs(cur_dataset_path)
+                    sly.logger.info(
+                        f"The directory {cur_dataset_path} wasn't found. It was created."
                     )
 
     return result
@@ -272,11 +273,8 @@ def process_coco_dir(
             )
         )
         if len(images_list) == 0:
-            raise Exception(
-                "Dataset: {!r} is empty. Check {!r} directory in project folder".format(
-                    dataset_name, dataset_path
-                )
-            )
+            sly.logger.warning(f"Dataset: {dataset_name} is empty. It will be skipped.")
+            continue
 
         dataset = api.dataset.create(
             project.id, dataset_name, change_name_if_conflict=True
