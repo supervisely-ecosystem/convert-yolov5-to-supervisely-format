@@ -14,6 +14,12 @@ my_app = sly.AppService()
 TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ["context.workspaceId"]
 INPUT_DIR = os.environ.get("modal.state.slyFolder")
+# If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
+if not INPUT_DIR.endswith("/"):
+    sly.logger.warning(
+        "The path to the import dir from env variable does not end with slash. Adding it."
+    )
+    INPUT_DIR += "/"
 INPUT_FILE = os.environ.get("modal.state.slyFile")
 
 DATA_CONFIG_NAME = "data_config.yaml"
@@ -338,18 +344,10 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     sly.logger.info(
         f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}."
     )
-    global INPUT_DIR
 
     storage_dir = my_app.data_dir
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
-
-        # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
-        if not INPUT_DIR.endswith("/"):
-            sly.logger.warning(
-                "The path to the import dir from env variable does not end with slash. Adding it."
-            )
-            INPUT_DIR += "/"
 
         sly.logger.info("The app is launched from directory (not archive file).")
 
