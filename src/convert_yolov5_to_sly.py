@@ -15,7 +15,7 @@ TEAM_ID = os.environ["context.teamId"]
 WORKSPACE_ID = os.environ["context.workspaceId"]
 INPUT_DIR = os.environ.get("modal.state.slyFolder")
 # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
-if not INPUT_DIR.endswith("/"):
+if INPUT_DIR is not None and not INPUT_DIR.endswith("/"):
     sly.logger.warning(
         "The path to the import dir from env variable does not end with slash. Adding it."
     )
