@@ -9,7 +9,7 @@
   "docker_image": "supervisely/base-py-sdk:6.35.0",
   "main_script": "src/convert_yolov5_to_sly.py",
   "task_location": "workspace_tasks",
-  "icon": "https://i.imgur.com/Zkr2Lix.png",
+  "icon": "media/icon.png",
   "icon_background": "#FFFFFF",
   "isolate": true,
   "headless": true,
