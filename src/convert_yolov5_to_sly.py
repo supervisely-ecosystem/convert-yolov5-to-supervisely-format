@@ -184,7 +184,7 @@ def read_config_yaml(config_yaml_path, app_logger):
             if t in config_yaml:
                 if config_yaml[t].startswith(".."):
                     cur_dataset_path = os.path.normpath(
-                        os.path.join(conf_dirname, "".join(config_yaml[t].split("/")[2:]))
+                        os.path.join(conf_dirname, "/".join(config_yaml[t].split("/")[2:]))
                     )
                 cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
