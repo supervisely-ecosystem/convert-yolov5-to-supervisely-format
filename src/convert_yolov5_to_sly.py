@@ -348,9 +348,9 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     elif INPUT_FILE:
         if sly.fs.get_file_ext(INPUT_FILE) not in [".zip", ".tar"]:
             parent_dir, _ = os.path.split(INPUT_FILE)
-            if parent_dir in ["images", "labels"]:
+            if os.path.basename(parent_dir) in ["images", "labels"]:
                 parent_dir = os.path.dirname(parent_dir)
-            elif parent_dir in ["train", "val"]:
+            elif os.path.basename(parent_dir) in ["train", "val"]:
                 parent_dir = os.path.dirname(os.path.dirname(parent_dir))
             sly.logger.info(f"parent_dir: {parent_dir}")
             listdir = api.file.listdir(TEAM_ID, parent_dir)
