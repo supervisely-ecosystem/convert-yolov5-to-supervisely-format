@@ -337,12 +337,6 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     storage_dir = my_app.data_dir
 
-    # check if file was uploaded in folder mode and change mode to file (and opposite)
-    if INPUT_DIR and api.file.exists(TEAM_ID, INPUT_DIR):
-        INPUT_DIR, INPUT_FILE = None, INPUT_DIR
-    elif INPUT_FILE and not api.file.exists(TEAM_ID, INPUT_FILE):
-        INPUT_DIR, INPUT_FILE = INPUT_FILE, None
-
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
 
