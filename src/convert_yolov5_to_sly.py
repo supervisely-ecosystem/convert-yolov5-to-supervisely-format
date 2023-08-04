@@ -327,6 +327,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
+    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
     sly.logger.info(f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}.")
 
     storage_dir = my_app.data_dir
