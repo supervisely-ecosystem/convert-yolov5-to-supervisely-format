@@ -200,7 +200,7 @@ def read_config_yaml(config_yaml_path, app_logger):
                     result["datasets"].append((t, cur_dataset_path))
 
                 elif len(result["datasets"]) == 0:
-                    raise Exception("No datasets given, check your project Directory or Archive")
+                    raise Exception("No 'train' or 'val' directories found. Please check the project directory or config file.")
 
                 elif len(result["datasets"]) == 1:
                     os.makedirs(cur_dataset_path)
