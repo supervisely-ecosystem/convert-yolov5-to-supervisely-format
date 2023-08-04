@@ -35,8 +35,8 @@ Example of `data_config.yaml`:
 names: [kiwi, lemon]            # class names
 colors: [[255,1,1], [1,255,1]]  # class colors
 nc: 2                           # number of classes
-train: ../lemons/images/train   # path to train imgs
-val: ../lemons/images/val       # path to val imgs
+train: ../lemons/images/train   # path to train imgs (or "images/train")
+val: ../lemons/images/val       # path to val imgs (or "images/val")
 ```
 
 **Project Tree example for Folder and Archive**
