@@ -1,18 +1,24 @@
 import os
 import yaml
 import tarfile
+import zipfile
+
+from dotenv import load_dotenv
 from pathlib import Path
 
-import supervisely_lib as sly
+import supervisely as sly
 
-# Uncomment for local debug.
-# from dotenv import load_dotenv
-# load_dotenv("debug.env")
 
+if sly.is_development():
+    load_dotenv("local.env")
+    load_dotenv(os.path.expanduser("~/supervisely.env"))
+
+api = sly.Api.from_env()
 my_app = sly.AppService()
 
-TEAM_ID = os.environ["context.teamId"]
-WORKSPACE_ID = os.environ["context.workspaceId"]
+TEAM_ID = sly.env.team_id()
+TASK_ID = sly.env.task_id()
+WORKSPACE_ID = sly.env.workspace_id()
 INPUT_DIR = os.environ.get("modal.state.slyFolder")
 # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
 if INPUT_DIR is not None and not INPUT_DIR.endswith("/"):
@@ -173,19 +179,12 @@ def read_config_yaml(config_yaml_path, app_logger):
         conf_dirname = os.path.dirname(config_yaml_path)
         for t in ["train", "val"]:
             if t not in config_yaml:
-                raise Exception(
-                    "{!r} path is not defined in {!r}".format(t, DATA_CONFIG_NAME)
-                )
+                raise Exception("{!r} path is not defined in {!r}".format(t, DATA_CONFIG_NAME))
 
             if t in config_yaml:
-                cur_dataset_path = os.path.normpath(
-                    os.path.join(conf_dirname, config_yaml[t])
-                )
+                cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
-                if (
-                    len(result["datasets"]) == 1
-                    and config_yaml["train"] == config_yaml["val"]
-                ):
+                if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
                     app_logger.warn(
                         "'train' and 'val' paths for images are the same in {}. Images will be uploaded "
                         "to 'train' dataset".format(DATA_CONFIG_NAME)
@@ -196,9 +195,7 @@ def read_config_yaml(config_yaml_path, app_logger):
                     result["datasets"].append((t, cur_dataset_path))
 
                 elif len(result["datasets"]) == 0:
-                    raise Exception(
-                        "No datasets given, check your project Directory or Archive"
-                    )
+                    raise Exception("No datasets given, check your project Directory or Archive")
 
                 elif len(result["datasets"]) == 1:
                     os.makedirs(cur_dataset_path)
@@ -259,32 +256,24 @@ def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
         class_id, x_center, y_center, ann_width, ann_height = line_parts
         class_name = config_yaml_info["names"][int(class_id)]
         return sly.Label(
-            convert_geometry(
-                x_center, y_center, ann_width, ann_height, img_width, img_height
-            ),
+            convert_geometry(x_center, y_center, ann_width, ann_height, img_width, img_height),
             project_meta.get_obj_class(class_name),
         )
 
 
-def process_coco_dir(
-    input_dir, project, project_meta, api, config_yaml_info, app_logger
-):
+def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
     for dataset_type, dataset_path in config_yaml_info["datasets"]:
         tag_meta = project_meta.get_tag_meta(dataset_type)
         dataset_name = os.path.basename(dataset_path)
 
         images_list = sorted(
-            sly.fs.list_files(
-                dataset_path, valid_extensions=sly.image.SUPPORTED_IMG_EXTS
-            )
+            sly.fs.list_files(dataset_path, valid_extensions=sly.image.SUPPORTED_IMG_EXTS)
         )
         if len(images_list) == 0:
             sly.logger.warning(f"Dataset: {dataset_name} is empty. It will be skipped.")
             continue
 
-        dataset = api.dataset.create(
-            project.id, dataset_name, change_name_if_conflict=True
-        )
+        dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
         progress = sly.Progress(
             "Processing {} dataset".format(dataset_name), len(images_list), sly.logger
         )
@@ -326,9 +315,7 @@ def process_coco_dir(
                                 )
 
                 tags_arr = sly.TagCollection(items=[sly.Tag(tag_meta)])
-                ann = sly.Annotation(
-                    img_size=(height, width), labels=labels_arr, img_tags=tags_arr
-                )
+                ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
                 cur_anns.append(ann)
 
             img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
@@ -341,20 +328,23 @@ def process_coco_dir(
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-    sly.logger.info(
-        f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}."
-    )
+    sly.logger.info(f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}.")
 
     storage_dir = my_app.data_dir
+
+    # check if file was uploaded in folder mode and change mode to file (and opposite)
+    if INPUT_DIR and api.file.exists(TEAM_ID, INPUT_DIR):
+        INPUT_DIR, INPUT_FILE = None, INPUT_DIR
+    elif INPUT_FILE and not api.file.exists(TEAM_ID, INPUT_FILE):
+        INPUT_DIR, INPUT_FILE = INPUT_FILE, None
+
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
 
         sly.logger.info("The app is launched from directory (not archive file).")
 
         cur_files_path = INPUT_DIR
-        extract_dir = os.path.join(
-            storage_dir, str(Path(cur_files_path).parent).lstrip("/")
-        )
+        extract_dir = os.path.join(storage_dir, str(Path(cur_files_path).parent).lstrip("/"))
         input_dir = os.path.join(extract_dir, Path(cur_files_path).name)
         archive_path = os.path.join(storage_dir, cur_files_path.strip("/") + ".tar")
         project_name = Path(cur_files_path).name
@@ -374,11 +364,9 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
         cur_files_path = INPUT_FILE
         extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
-        archive_path = os.path.join(
-            storage_dir, sly.fs.get_file_name_with_ext(cur_files_path)
-        )
+        archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
         input_dir = extract_dir
-        project_name = sly.fs.get_file_name_with_ext(INPUT_FILE)
+        project_name = sly.fs.get_file_name(INPUT_FILE)
 
         sly.logger.info(
             f"Trying to download archive from {cur_files_path} to local path: {archive_path}"
@@ -395,19 +383,19 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
                 archive.extractall(extract_dir)
 
             sly.logger.info(f"Successfully extracted archive to {extract_dir}.")
+        elif zipfile.is_zipfile(archive_path):
+            with zipfile.ZipFile(archive_path, "r") as zip_ref:
+                zip_ref.extractall(extract_dir)
+
+            sly.logger.info(f"Successfully extracted archive to {extract_dir}.")
         else:
+            sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
             raise Exception("No such file: {}".format(INPUT_FILE))
 
-    config_yaml_info = read_config_yaml(
-        os.path.join(input_dir, DATA_CONFIG_NAME), app_logger
-    )
-    project = api.project.create(
-        WORKSPACE_ID, project_name, change_name_if_conflict=True
-    )
+    config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME), app_logger)
+    project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     project_meta = upload_project_meta(api, project.id, config_yaml_info)
-    process_coco_dir(
-        input_dir, project, project_meta, api, config_yaml_info, app_logger
-    )
+    process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
     api.task.set_output_project(task_id, project.id, project.name)
     my_app.stop()
 
