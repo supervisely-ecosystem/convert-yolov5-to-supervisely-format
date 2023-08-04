@@ -9,7 +9,7 @@
     "docker_image": "supervisely/import-export:0.0.5",
     "main_script": "src/convert_yolov5_to_sly.py",
     "task_location": "workspace_tasks",
-    "icon": "https://i.imgur.com/Zkr2Lix.png",
+    "icon": "https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/c723ba07-933c-4627-8124-afb29fbbce2a",
     "icon_background": "#FFFFFF",
     "isolate": true,
     "headless": true,
