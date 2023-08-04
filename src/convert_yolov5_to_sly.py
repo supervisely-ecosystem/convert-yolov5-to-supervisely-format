@@ -352,6 +352,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
                 parent_dir = os.path.dirname(parent_dir)
             elif parent_dir in ["train", "val"]:
                 parent_dir = os.path.dirname(os.path.dirname(parent_dir))
+            sly.logger.info(f"parent_dir: {parent_dir}")
             listdir = api.file.listdir(TEAM_ID, parent_dir)
             if DATA_CONFIG_NAME in listdir:
                 sly.logger.warn("File mode is selected, but directory is uploaded.")
