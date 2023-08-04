@@ -1,3 +1,4 @@
+import glob
 import os
 import yaml
 import tarfile
@@ -181,6 +182,10 @@ def read_config_yaml(config_yaml_path, app_logger):
                 raise Exception("{!r} path is not defined in {!r}".format(t, DATA_CONFIG_NAME))
 
             if t in config_yaml:
+                if config_yaml[t].startswith(".."):
+                    cur_dataset_path = os.path.normpath(
+                        os.path.join(conf_dirname, "".join(config_yaml[t].split("/")[2:]))
+                    )
                 cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
                 if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
@@ -391,6 +396,21 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         else:
             sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
             raise Exception("No such file: {}".format(INPUT_FILE))
+        
+    if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
+        sly.logger.info(f"Yaml config file not found in {input_dir}. Searching for it in subfolders.")
+        all_files = glob.glob(os.path.join(input_dir, "**"), recursive=True)
+        yaml_path = None
+        for file in all_files:
+            if os.path.basename(file) == DATA_CONFIG_NAME:
+                yaml_path = file
+                break
+        if yaml_path is None:
+            raise FileNotFoundError(f"Yaml config file not found. Please check your input project directory.")
+        else:
+            sly.logger.info(f"Yaml config file found: {yaml_path}")
+            input_dir = os.path.dirname(yaml_path)
+            sly.logger.info(f"Input dir path changed to {input_dir}")
 
     config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME), app_logger)
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
