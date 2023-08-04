@@ -347,7 +347,14 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
         if sly.fs.get_file_ext(INPUT_FILE) not in [".zip", ".tar"]:
-            raise Exception("File mode is selected, but uploaded file is not archive.")
+            parent_dir, _ = os.path.split(INPUT_FILE)
+            listdir = api.file.listdir(TEAM_ID, parent_dir)
+            if DATA_CONFIG_NAME in listdir:
+                sly.logger.warn("File mode is selected, but directory is uploaded.")
+                sly.logger.info("Switching to folder mode.")
+                INPUT_DIR, INPUT_FILE = parent_dir, None
+            else:
+                raise Exception("File mode is selected, but uploaded file is not an archive.")
 
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
