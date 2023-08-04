@@ -352,11 +352,12 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
                 parent_dir = os.path.dirname(parent_dir)
             elif os.path.basename(parent_dir) in ["train", "val"]:
                 parent_dir = os.path.dirname(os.path.dirname(parent_dir))
-            sly.logger.info(f"parent_dir: {parent_dir}")
             if not parent_dir.endswith("/"):
                 parent_dir += "/"
+            sly.logger.info(f"parent_dir: {parent_dir}")
             listdir = api.file.listdir(TEAM_ID, parent_dir)
-            if DATA_CONFIG_NAME in listdir:
+            file_names = [os.path.basename(file) for file in listdir]
+            if DATA_CONFIG_NAME in file_names:
                 sly.logger.warn("File mode is selected, but directory is uploaded.")
                 sly.logger.info("Switching to folder mode.")
                 INPUT_DIR, INPUT_FILE = parent_dir, None
