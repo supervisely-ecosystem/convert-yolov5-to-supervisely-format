@@ -186,7 +186,8 @@ def read_config_yaml(config_yaml_path, app_logger):
                     cur_dataset_path = os.path.normpath(
                         os.path.join(conf_dirname, "/".join(config_yaml[t].split("/")[2:]))
                     )
-                cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
+                else:
+                    cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
                 if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
                     app_logger.warn(
