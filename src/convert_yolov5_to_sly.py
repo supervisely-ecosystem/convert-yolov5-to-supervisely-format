@@ -342,7 +342,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     if INPUT_DIR:
         listdir = api.file.listdir(TEAM_ID, INPUT_DIR)
         if len(listdir) == 1 and sly.fs.get_file_ext(listdir[0]) in [".zip", ".tar"]:
-            sly.logger.warn("Folder mode is selected, but archive file is uploaded.")
+            sly.logger.info("Folder mode is selected, but archive file is uploaded.")
             sly.logger.info("Switching to file mode.")
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
@@ -358,7 +358,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             listdir = api.file.listdir(TEAM_ID, parent_dir)
             file_names = [os.path.basename(file) for file in listdir]
             if DATA_CONFIG_NAME in file_names:
-                sly.logger.warn("File mode is selected, but directory is uploaded.")
+                sly.logger.info("File mode is selected, but directory is uploaded.")
                 sly.logger.info("Switching to folder mode.")
                 INPUT_DIR, INPUT_FILE = parent_dir, None
             else:
