@@ -330,6 +330,8 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
             api.annotation.upload_anns(img_ids, cur_anns)
             progress.iters_done_report(len(batch))
 
+    sly.logger.info(f"Project {project.name} has been successfully uploaded.")
+
 
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
@@ -440,6 +442,8 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     # sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
 
+    project_count = 0
+
     for yolo_dir in sly.fs.dirs_with_marker(input_dir, DATA_CONFIG_NAME, ignore_case=True):
         try:
             config_yaml_info = read_config_yaml(
@@ -449,8 +453,19 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             project_meta = upload_project_meta(api, project.id, config_yaml_info)
             process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
             api.task.set_output_project(task_id, project.id, project.name)
+
+            project_count += 1
         except Exception as e:
             sly.logger.warning(f"There was a problem while processing {yolo_dir}: {e}")
+
+    if project_count:
+        sly.logger.info(f"{project_count} projects have been successfully uploaded.")
+    else:
+        sly.logger.error(
+            "No projects have been uploaded. Please check logs and ensure that "
+            "the input data meets the requirements specified in the README."
+        )
+
     my_app.stop()
 
 
