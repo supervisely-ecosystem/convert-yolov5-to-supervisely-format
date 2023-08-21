@@ -1,4 +1,3 @@
-import glob
 import os
 import yaml
 import tarfile
@@ -200,7 +199,9 @@ def read_config_yaml(config_yaml_path, app_logger):
                     result["datasets"].append((t, cur_dataset_path))
 
                 elif len(result["datasets"]) == 0:
-                    raise Exception("No 'train' or 'val' directories found. Please check the project directory or config file.")
+                    raise Exception(
+                        "No 'train' or 'val' directories found. Please check the project directory or config file."
+                    )
 
                 elif len(result["datasets"]) == 1:
                     os.makedirs(cur_dataset_path)
@@ -332,6 +333,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
+@sly.handle_exceptions
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
     sly.logger.info(f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}.")
@@ -417,28 +419,39 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         else:
             sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
             raise Exception("No such file: {}".format(INPUT_FILE))
-        
-    if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
-        sly.logger.info(f"Yaml config file not found in {input_dir}. Searching for it in subfolders.")
-        all_files = glob.glob(os.path.join(input_dir, "**"), recursive=True)
-        yaml_path = None
-        for file in all_files:
-            if os.path.basename(file) == DATA_CONFIG_NAME:
-                yaml_path = file
-                break
-        if yaml_path is None:
-            raise FileNotFoundError(f"Yaml config file not found. Please check your input project directory.")
-        else:
-            sly.logger.info(f"Yaml config file found: {yaml_path}")
-            input_dir = os.path.dirname(yaml_path)
-            sly.logger.info(f"Input dir path changed to {input_dir}")
 
-    sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
-    config_yaml_info = read_config_yaml(os.path.join(input_dir, DATA_CONFIG_NAME), app_logger)
-    project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
-    project_meta = upload_project_meta(api, project.id, config_yaml_info)
-    process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
-    api.task.set_output_project(task_id, project.id, project.name)
+    # if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
+    #     sly.logger.info(
+    #         f"Yaml config file not found in {input_dir}. Searching for it in subfolders."
+    #     )
+    #     all_files = glob.glob(os.path.join(input_dir, "**"), recursive=True)
+    #     yaml_path = None
+    #     for file in all_files:
+    #         if os.path.basename(file) == DATA_CONFIG_NAME:
+    #             yaml_path = file
+    #             break
+    #     if yaml_path is None:
+    #         raise FileNotFoundError(
+    #             "Yaml config file not found. Please check your input project directory."
+    #         )
+    #     else:
+    #         sly.logger.info(f"Yaml config file found: {yaml_path}")
+    #         input_dir = os.path.dirname(yaml_path)
+    #         sly.logger.info(f"Input dir path changed to {input_dir}")
+
+    # sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
+
+    for yolo_dir in sly.fs.dirs_with_marker(input_dir, DATA_CONFIG_NAME, ignore_case=True):
+        try:
+            config_yaml_info = read_config_yaml(
+                os.path.join(yolo_dir, DATA_CONFIG_NAME), app_logger
+            )
+            project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
+            project_meta = upload_project_meta(api, project.id, config_yaml_info)
+            process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
+            api.task.set_output_project(task_id, project.id, project.name)
+        except Exception as e:
+            sly.logger.warning(f"There was a problem while processing {yolo_dir}: {e}")
     my_app.stop()
 
 

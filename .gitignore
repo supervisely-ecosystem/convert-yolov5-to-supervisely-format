@@ -4,3 +4,4 @@ venv
 app_debug_data
 .venv
 supervisely
+.flake8
