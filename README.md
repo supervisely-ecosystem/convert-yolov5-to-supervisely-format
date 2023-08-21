@@ -21,7 +21,7 @@
 
 ## Overview
 
-🗄️ Starting from version 1.2.1 the application supports the import of multiple projects at once. Each project should be placed in a separate directory with the correct structure (see below).
+🗄️ Starting from version 1.2.2 the application supports the import of multiple projects at once. Each project should be placed in a separate directory with the correct structure (see below).
 
 The app transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
 
