@@ -20,8 +20,10 @@
 </div>
 
 ## Overview
-App transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
 
+🗄️ Starting from version 1.2.1 the application supports the import of multiple projects at once. Each project should be placed in a separate directory with the correct structure (see below).
+
+The app transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
 
 ## Preparation
 
@@ -32,50 +34,121 @@ Upload images and labels in YOLO v5 format to team files. It is possible to uplo
 Example of `data_config.yaml`:
 
 ```yaml
-names: [kiwi, lemon]            # class names
-colors: [[255,1,1], [1,255,1]]  # class colors
-nc: 2                           # number of classes
-train: ../lemons/images/train   # path to train imgs (or "images/train")
-val: ../lemons/images/val       # path to val imgs (or "images/val")
+names: [kiwi, lemon] # class names
+colors: [[255, 1, 1], [1, 255, 1]] # class colors
+nc: 2 # number of classes
+train: ../lemons/images/train # path to train imgs (or "images/train")
+val: ../lemons/images/val # path to val imgs (or "images/val")
 ```
 
 **Project Tree example for Folder and Archive**
 <img src="https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/370338f5-8e10-46f0-9506-4bcd7c1c325f"/>
 
-**Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes, 
+**Note**: YOLO v5 project must contain `data_config.yaml` file in its root directory if you want to use custom classes,
 or it will use default coco class names:
 
 ```yaml
 # class names
-names: ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-        'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-        'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-        'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-        'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-        'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 
-        'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 
-        'teddy bear', 'hair drier', 'toothbrush']
+names:
+  [
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush",
+  ]
 ```
 
+## How To Run
 
-## How To Run 
+**Step 1**: Add the app to your team from Ecosystem if it is not there. The application will be added to the `Current Team`->`PLugins & Apps` page.
 
-**Step 1**: Add app to your team from Ecosystem if it is not there. Application will be added to `Current Team`->`PLugins & Apps` page.
-
-**Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`. You will be redirected to `Workspace`->`Tasks` page.
-<img src="https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/36a1b40e-e085-4bec-89fd-a5c60a00498f"/> 
+**Step 2**: Go to `Current Team`->`Files` page, right-click on your `.tar` archive or YOLO v5 project and choose `Run App`->`Convert YOLO v5 to Supervisely format`. You will be redirected to the `Workspace`->`Tasks` page.
+<img src="https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/36a1b40e-e085-4bec-89fd-a5c60a00498f"/>
 
 ## How to use
 
-Result project will be saved to your current `Workspace` with the same name as the YOLO v5 folder or archive has. 
-Application creates 2 datasets: `train` and `val`, and additionally assigns `train` and `val` tags to the images. 
-If there are no images in `val` then only `train` dataset is created.
+The resulting project will be saved to your current `Workspace` with the same name as the YOLO v5 folder or archive.
+The application creates 2 datasets: `train` and `val`, and additionally assigns `train` and `val` tags to the images.
+If there are no images in `val` then only the `train` dataset is created.
 
 <img src="https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/b9580775-81cb-425c-902e-c58cb6e203bb"/>
 
-You can also access your project by clicking on it's name from `Tasks` page.
+You can also access your project by clicking on its name from the `Tasks` page.
 
 <img src="https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/3a844a93-f88b-4063-86b9-098cb60e061f"/>
-
-
