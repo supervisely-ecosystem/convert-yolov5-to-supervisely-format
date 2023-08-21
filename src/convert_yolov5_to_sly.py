@@ -461,7 +461,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     if project_count:
         sly.logger.info(f"{project_count} projects have been successfully uploaded.")
     else:
-        sly.logger.error(
+        raise Exception(
             "No projects have been uploaded. Please check logs and ensure that "
             "the input data meets the requirements specified in the README."
         )
