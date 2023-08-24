@@ -373,7 +373,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             sly.logger.info("Switching to file mode.")
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
-        if sly.fs.get_file_ext(listdir[0]) not in ARCHIVE_EXTENTIONS:
+        if sly.fs.get_file_ext(INPUT_FILE) not in ARCHIVE_EXTENTIONS:
             sly.logger.info("File mode is selected, but uploaded file is not an archive.")
             parent_dir, _ = os.path.split(INPUT_FILE)
             if os.path.basename(parent_dir) in ["images", "labels"]:
