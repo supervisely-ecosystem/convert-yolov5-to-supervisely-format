@@ -360,7 +360,7 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
+    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE, DATA_CONFIG_NAME
     sly.logger.info(f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}.")
 
     storage_dir = my_app.data_dir
