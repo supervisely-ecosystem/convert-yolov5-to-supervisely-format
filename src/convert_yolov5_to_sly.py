@@ -22,7 +22,7 @@ WORKSPACE_ID = sly.env.workspace_id()
 INPUT_DIR = os.environ.get("modal.state.slyFolder")
 # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
 if INPUT_DIR is not None and not INPUT_DIR.endswith("/"):
-    sly.logger.warning(
+    sly.logger.info(
         "The path to the import dir from env variable does not end with slash. Adding it."
     )
     INPUT_DIR += "/"
@@ -429,6 +429,8 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
         cur_files_path = INPUT_FILE
         extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
+        if sly.fs.get_file_ext(extract_dir) in ARCHIVE_EXTENTIONS:
+            extract_dir = os.path.split(extract_dir)[0]
         archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
         input_dir = extract_dir
         project_name = sly.fs.get_file_name(INPUT_FILE)
