@@ -430,7 +430,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         cur_files_path = INPUT_FILE
         extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
         if sly.fs.get_file_ext(extract_dir) in ARCHIVE_EXTENTIONS:
-            extract_dir = os.path.split(extract_dir)[0]
+            extract_dir = os.path.splitext(extract_dir)[0]
         archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
         input_dir = extract_dir
         project_name = sly.fs.get_file_name(INPUT_FILE)
@@ -466,6 +466,10 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             raise Exception("No such file: {}".format(INPUT_FILE))
 
         sly.fs.remove_junk_from_dir(extract_dir)
+        extracted_paths = sly.fs.list_dir_recursively(extract_dir, include_subdirs=True, use_global_paths=True)
+        for path in extracted_paths:
+            if sly.fs.get_file_name_with_ext(path).startswith("._"):
+                sly.fs.silent_remove(path)
 
     # if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
     #     sly.logger.info(
