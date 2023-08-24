@@ -5,6 +5,7 @@ import zipfile
 
 from dotenv import load_dotenv
 from pathlib import Path
+from tqdm import tqdm
 
 import supervisely as sly
 
@@ -333,6 +334,28 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
     sly.logger.info(f"Project {project.name} has been successfully uploaded.")
 
 
+def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
+    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
+    files = api.file.list(team_id, input_dir)
+    images_list = [f for f in files if sly.fs.get_file_ext(f.name) in sly.image.SUPPORTED_IMG_EXTS]
+    if len(images_list) == 0:
+        return
+    common_parent_dir = os.path.commonpath([img.path for img in images_list])
+    project_name = os.path.basename(common_parent_dir.strip("/"))
+
+    project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
+    dataset = api.dataset.create(project.id, "ds0", change_name_if_conflict=True)
+    pbar = tqdm(total=len(images_list), desc="Uploading only images")
+    for batch in sly.batched(images_list):
+        img_names = [img.name for img in batch]
+        img_links = [img.full_storage_url for img in batch]
+        api.image.upload_links(dataset.id, img_names, img_links)
+        pbar.update(len(batch))
+
+    api.task.set_output_project(task_id, project.id, project.name)
+    sly.logger.info(f"Images from have been uploaded to project {project.name}")
+
+
 @my_app.callback("yolov5_sly_converter")
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
@@ -344,12 +367,13 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     # check if file was uploaded in folder mode and change mode to file (and opposite)
     if INPUT_DIR:
         listdir = api.file.listdir(TEAM_ID, INPUT_DIR)
-        if len(listdir) == 1 and sly.fs.get_file_ext(listdir[0]) in [".zip", ".tar"]:
+        if len(listdir) == 1 and (tarfile.is_tarfile(listdir[0]) or zipfile.is_zipfile(listdir[0])):
             sly.logger.info("Folder mode is selected, but archive file is uploaded.")
             sly.logger.info("Switching to file mode.")
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
-        if sly.fs.get_file_ext(INPUT_FILE) not in [".zip", ".tar"]:
+        if not (tarfile.is_tarfile(INPUT_FILE) or zipfile.is_zipfile(INPUT_FILE)):
+            sly.logger.info("File mode is selected, but uploaded file is not an archive.")
             parent_dir, _ = os.path.split(INPUT_FILE)
             if os.path.basename(parent_dir) in ["images", "labels"]:
                 parent_dir = os.path.dirname(parent_dir)
@@ -358,14 +382,35 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             if not parent_dir.endswith("/"):
                 parent_dir += "/"
             sly.logger.info(f"parent_dir: {parent_dir}")
-            listdir = api.file.listdir(TEAM_ID, parent_dir)
+            listdir = api.file.listdir(TEAM_ID, parent_dir, recursive=True)
+            config_files_list = [file for file in listdir if sly.fs.get_file_ext(file) == ".yaml"]
             file_names = [os.path.basename(file) for file in listdir]
             if DATA_CONFIG_NAME in file_names:
-                sly.logger.info("File mode is selected, but directory is uploaded.")
                 sly.logger.info("Switching to folder mode.")
                 INPUT_DIR, INPUT_FILE = parent_dir, None
+            elif len(config_files_list) == 1:
+                DATA_CONFIG_NAME = os.path.basename(config_files_list[0])
+                sly.logger.info(f"Switching to folder mode. DATA_CONFIG_NAME: {DATA_CONFIG_NAME}")
+                INPUT_DIR, INPUT_FILE = os.path.dirname(DATA_CONFIG_NAME), None
+            elif len(config_files_list) > 1:
+                sly.logger.info(f"Found {len(config_files_list)} config files in directory.")
+                parent_dir = os.path.commonpath(config_files_list)
+                sly.logger.info(f"Swithing to folder mode. Common_parent_dir: {parent_dir}")
+                INPUT_DIR, INPUT_FILE = parent_dir, None
             else:
-                raise Exception("File mode is selected, but uploaded file is not an archive.")
+                sly.logger.warn("data_config.yaml file not found in directory. Trying to parce images only.")
+                try:
+                    upload_images_only(api, task_id, TEAM_ID, parent_dir)
+                    my_app.stop()
+                except Exception as e:
+                    error_msg = (
+                        "File mode is selected, but uploaded file is not an archive. \n"
+                        "Config data_config.yaml file not found in directory. \n"
+                        "Prepare your data according to the app requirements (README) and try again. \n"
+                        "Uploading only images failed. Reason: \n"
+                        f"{e}"
+                    )
+                    raise Exception(error_msg)
 
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
