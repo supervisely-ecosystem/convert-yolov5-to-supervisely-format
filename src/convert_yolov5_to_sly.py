@@ -337,24 +337,40 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
 def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
     global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
-    files = api.file.list(team_id, input_dir)
-    images_list = [f for f in files if sly.fs.get_file_ext(f.name) in sly.image.SUPPORTED_IMG_EXTS]
+    images_list = sly.fs.list_files_recursively(
+        input_dir, valid_extensions=sly.image.SUPPORTED_IMG_EXTS
+    )
+    images_list = [f for f in images_list if sly.fs.get_file_ext(f) != ".nrrd"]
     if len(images_list) == 0:
-        return
-    common_parent_dir = os.path.commonpath([img.path for img in images_list])
+        raise
+    if len(images_list) == 1:
+        common_parent_dir = os.path.dirname(images_list[0])
+    else:
+        common_parent_dir = os.path.commonpath(images_list)
     project_name = os.path.basename(common_parent_dir.strip("/"))
 
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
-    dataset = api.dataset.create(project.id, "ds0", change_name_if_conflict=True)
+    dataset = api.dataset.create(project.id, "train", change_name_if_conflict=True)
     pbar = tqdm(total=len(images_list), desc="Uploading only images")
     for batch in sly.batched(images_list):
-        img_names = [img.name for img in batch]
-        img_links = [img.full_storage_url for img in batch]
-        api.image.upload_links(dataset.id, img_names, img_links)
-        pbar.update(len(batch))
+        img_names = [os.path.basename(img) for img in batch]
+        api.image.upload_paths(dataset.id, img_names, batch, pbar.update)
 
     api.task.set_output_project(task_id, project.id, project.name)
-    sly.logger.info(f"Images from have been uploaded to project {project.name}")
+    sly.logger.info(f"Images from have been uploaded to project '{project.name}'")
+
+
+def find_markers(input_dir):
+    paths = sly.fs.list_files_recursively(input_dir, valid_extensions=".yaml")
+    markers = [os.path.basename(path) for path in paths]
+    if len(markers) == 0:
+        sly.logger.info("No config files found in directory. Keep by default: data_config.yaml")
+        markers = [DATA_CONFIG_NAME]
+    if len(markers) == 1:
+        sly.logger.info(f"Found config file: {paths}")
+    elif len(markers) > 1:
+        sly.logger.info(f"Found {len(markers)} config files in directory: {paths}")
+    return list(set(markers))
 
 
 @my_app.callback("yolov5_sly_converter")
@@ -383,35 +399,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             if not parent_dir.endswith("/"):
                 parent_dir += "/"
             sly.logger.info(f"parent_dir: {parent_dir}")
-            listdir = api.file.listdir(TEAM_ID, parent_dir, recursive=True)
-            config_files_list = [file for file in listdir if sly.fs.get_file_ext(file) == ".yaml"]
-            file_names = [os.path.basename(file) for file in listdir]
-            if DATA_CONFIG_NAME in file_names:
-                sly.logger.info("Switching to folder mode.")
-                INPUT_DIR, INPUT_FILE = parent_dir, None
-            elif len(config_files_list) == 1:
-                DATA_CONFIG_NAME = os.path.basename(config_files_list[0])
-                sly.logger.info(f"Switching to folder mode. DATA_CONFIG_NAME: {DATA_CONFIG_NAME}")
-                INPUT_DIR, INPUT_FILE = os.path.dirname(DATA_CONFIG_NAME), None
-            elif len(config_files_list) > 1:
-                sly.logger.info(f"Found {len(config_files_list)} config files in directory.")
-                parent_dir = os.path.commonpath(config_files_list)
-                sly.logger.info(f"Swithing to folder mode. Common_parent_dir: {parent_dir}")
-                INPUT_DIR, INPUT_FILE = parent_dir, None
-            else:
-                sly.logger.warn("data_config.yaml file not found in directory. Trying to parce images only.")
-                try:
-                    upload_images_only(api, task_id, TEAM_ID, parent_dir)
-                    my_app.stop()
-                except Exception as e:
-                    error_msg = (
-                        "File mode is selected, but uploaded file is not an archive. \n"
-                        "Config data_config.yaml file not found in directory. \n"
-                        "Prepare your data according to the app requirements (README) and try again. \n"
-                        "Uploading only images failed. Reason: \n"
-                        f"{e}"
-                    )
-                    raise Exception(error_msg)
+            INPUT_DIR, INPUT_FILE = parent_dir, None
 
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
@@ -428,6 +416,8 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             f"Trying to download directory from {cur_files_path} to local path: {input_dir}"
         )
 
+        if sly.fs.dir_exists(input_dir):
+            sly.fs.clean_dir(input_dir)
         api.file.download_directory(TEAM_ID, cur_files_path, input_dir)
 
         sly.logger.info(f"Successfully downloaded directory to {input_dir}.")
@@ -446,6 +436,12 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         sly.logger.info(
             f"Trying to download archive from {cur_files_path} to local path: {archive_path}"
         )
+
+        if sly.fs.dir_exists(input_dir):
+            sly.fs.clean_dir(input_dir)
+
+        if sly.fs.file_exists(archive_path):
+            sly.fs.silent_remove(archive_path)
 
         api.file.download(TEAM_ID, cur_files_path, archive_path)
 
@@ -466,6 +462,8 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         else:
             sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
             raise Exception("No such file: {}".format(INPUT_FILE))
+
+        sly.fs.remove_junk_from_dir(extract_dir)
 
     # if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
     #     sly.logger.info(
@@ -489,12 +487,18 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     # sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
 
     project_count = 0
+    markers = find_markers(input_dir)
 
-    for yolo_dir in sly.fs.dirs_with_marker(input_dir, DATA_CONFIG_NAME, ignore_case=True):
+    for yolo_dir in sly.fs.dirs_with_marker(input_dir, markers, ignore_case=True):
         try:
-            config_yaml_info = read_config_yaml(
-                os.path.join(yolo_dir, DATA_CONFIG_NAME), app_logger
-            )
+            config_yaml_path = os.path.join(yolo_dir, DATA_CONFIG_NAME)
+            for marker in markers:
+                config_yaml_path = os.path.join(yolo_dir, marker)
+                if sly.fs.file_exists(config_yaml_path):
+                    sly.logger.info(f"Found config file: {config_yaml_path}")
+                    break
+            project_name = os.path.basename(os.path.normpath(yolo_dir))
+            config_yaml_info = read_config_yaml(config_yaml_path, app_logger)
             project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
             project_meta = upload_project_meta(api, project.id, config_yaml_info)
             process_coco_dir(yolo_dir, project, project_meta, api, config_yaml_info, app_logger)
@@ -507,10 +511,14 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     if project_count:
         sly.logger.info(f"{project_count} projects have been successfully uploaded.")
     else:
-        raise Exception(
-            "No projects have been uploaded. Please check logs and ensure that "
-            "the input data meets the requirements specified in the README."
-        )
+        try:
+            sly.logger.info("No projects found. Trying to upload images only.")
+            upload_images_only(api, task_id, TEAM_ID, input_dir)
+        except:
+            raise Exception(
+                "No projects have been uploaded. Please check logs and ensure that "
+                "the input data meets the requirements specified in the README."
+            )
 
     my_app.stop()
 
