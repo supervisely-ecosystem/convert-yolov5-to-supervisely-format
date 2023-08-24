@@ -29,6 +29,7 @@ if INPUT_DIR is not None and not INPUT_DIR.endswith("/"):
 INPUT_FILE = os.environ.get("modal.state.slyFile")
 
 DATA_CONFIG_NAME = "data_config.yaml"
+ARCHIVE_EXTENTIONS = [".zip", ".tar", ".gz", ".tar.gz", ".tgz", ".xz"]
 
 coco_classes = [
     "person",
@@ -367,12 +368,12 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     # check if file was uploaded in folder mode and change mode to file (and opposite)
     if INPUT_DIR:
         listdir = api.file.listdir(TEAM_ID, INPUT_DIR)
-        if len(listdir) == 1 and (tarfile.is_tarfile(listdir[0]) or zipfile.is_zipfile(listdir[0])):
+        if len(listdir) == 1 and sly.fs.get_file_ext(listdir[0]) in ARCHIVE_EXTENTIONS:
             sly.logger.info("Folder mode is selected, but archive file is uploaded.")
             sly.logger.info("Switching to file mode.")
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
-        if not (tarfile.is_tarfile(INPUT_FILE) or zipfile.is_zipfile(INPUT_FILE)):
+        if sly.fs.get_file_ext(listdir[0]) not in ARCHIVE_EXTENTIONS:
             sly.logger.info("File mode is selected, but uploaded file is not an archive.")
             parent_dir, _ = os.path.split(INPUT_FILE)
             if os.path.basename(parent_dir) in ["images", "labels"]:
