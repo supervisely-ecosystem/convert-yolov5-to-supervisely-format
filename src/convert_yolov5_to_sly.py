@@ -497,7 +497,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             )
             project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
             project_meta = upload_project_meta(api, project.id, config_yaml_info)
-            process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger)
+            process_coco_dir(yolo_dir, project, project_meta, api, config_yaml_info, app_logger)
             api.task.set_output_project(task_id, project.id, project.name)
 
             project_count += 1
