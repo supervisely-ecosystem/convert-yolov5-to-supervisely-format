@@ -326,10 +326,13 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                 ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
                 cur_anns.append(ann)
 
-            img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
-            img_ids = [x.id for x in img_infos]
+            try:
+                img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
+                img_ids = [x.id for x in img_infos]
+                api.annotation.upload_anns(img_ids, cur_anns)
+            except Exception as e:
+                sly.logger.warn(msg=e)
 
-            api.annotation.upload_anns(img_ids, cur_anns)
             progress.iters_done_report(len(batch))
 
     sly.logger.info(f"Project {project.name} has been successfully uploaded.")
@@ -351,10 +354,14 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
 
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     dataset = api.dataset.create(project.id, "train", change_name_if_conflict=True)
-    pbar = tqdm(total=len(images_list), desc="Uploading only images")
+    pbar = tqdm(total=len(images_list), desc="Processing only images")
     for batch in sly.batched(images_list):
         img_names = [os.path.basename(img) for img in batch]
-        api.image.upload_paths(dataset.id, img_names, batch, pbar.update)
+        try:
+            api.image.upload_paths(dataset.id, img_names, batch)
+        except Exception as e:
+            sly.logger.warn(msg=e)
+        pbar.update(len(batch))
 
     api.task.set_output_project(task_id, project.id, project.name)
     sly.logger.info(f"Images from have been uploaded to project '{project.name}'")
