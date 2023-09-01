@@ -5,7 +5,6 @@ import zipfile
 
 from dotenv import load_dotenv
 from pathlib import Path
-from tqdm import tqdm
 
 import supervisely as sly
 
@@ -282,15 +281,19 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
             continue
 
         dataset = api.dataset.create(project.id, dataset_name, change_name_if_conflict=True)
-        progress = sly.Progress(
-            "Processing {} dataset".format(dataset_name), len(images_list), sly.logger
-        )
+        progress = sly.Progress(f"Processing {dataset_name} dataset", len(images_list))
+        bad_images = []
         for batch in sly._utils.batched(images_list):
             cur_img_names = []
             cur_img_paths = []
             cur_anns = []
 
             for image_file_name in batch:
+                try:
+                    sly.image.validate_format(image_file_name)
+                except:
+                    bad_images.append(image_file_name)
+                    continue
                 image_name = os.path.basename(image_file_name)
                 cur_img_names.append(image_name)
                 cur_img_paths.append(image_file_name)
@@ -326,11 +329,18 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                 ann = sly.Annotation(img_size=(height, width), labels=labels_arr, img_tags=tags_arr)
                 cur_anns.append(ann)
 
-            img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
-            img_ids = [x.id for x in img_infos]
+            try:
+                img_infos = api.image.upload_paths(dataset.id, cur_img_names, cur_img_paths)
+                img_ids = [x.id for x in img_infos]
+                api.annotation.upload_anns(img_ids, cur_anns)
+            except Exception as e:
+                sly.logger.warn(msg=e)
 
-            api.annotation.upload_anns(img_ids, cur_anns)
             progress.iters_done_report(len(batch))
+        if len(bad_images) > 0:
+            sly.logger.warn(
+                f"{dataset_name}: skipped {len(bad_images)} images with unsupported format: {bad_images}"
+            )
 
     sly.logger.info(f"Project {project.name} has been successfully uploaded.")
 
@@ -351,10 +361,27 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
 
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     dataset = api.dataset.create(project.id, "train", change_name_if_conflict=True)
-    pbar = tqdm(total=len(images_list), desc="Uploading only images")
+
+    bad_images = []
+    progress = sly.Progress("Processing only images", len(images_list))
     for batch in sly.batched(images_list):
-        img_names = [os.path.basename(img) for img in batch]
-        api.image.upload_paths(dataset.id, img_names, batch, pbar.update)
+        img_names = []
+        img_paths = []
+        for img in batch:
+            try:
+                sly.image.validate_format(img)
+            except:
+                bad_images.append(img)
+                continue
+            img_names.append(os.path.basename(img))
+            img_paths.append(img)
+        try:
+            api.image.upload_paths(dataset.id, img_names, img_paths)
+        except Exception as e:
+            sly.logger.warn(msg=e)
+        progress.iters_done_report(len(batch))
+    if len(bad_images) > 0:
+        sly.logger.warn(f"Skipped {len(bad_images)} images with unsupported format: {bad_images}")
 
     api.task.set_output_project(task_id, project.id, project.name)
     sly.logger.info(f"Images from have been uploaded to project '{project.name}'")
@@ -418,7 +445,9 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
         if sly.fs.dir_exists(input_dir):
             sly.fs.clean_dir(input_dir)
-        api.file.download_directory(TEAM_ID, cur_files_path, input_dir)
+        size = api.file.get_directory_size(TEAM_ID, cur_files_path)
+        progress = sly.Progress("Downloading directory", total_cnt=size, is_size=True)
+        api.file.download_directory(TEAM_ID, cur_files_path, input_dir, progress.iters_done_report)
 
         sly.logger.info(f"Successfully downloaded directory to {input_dir}.")
 
@@ -445,7 +474,11 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         if sly.fs.file_exists(archive_path):
             sly.fs.silent_remove(archive_path)
 
-        api.file.download(TEAM_ID, cur_files_path, archive_path)
+        size = api.file.get_info_by_path(TEAM_ID, cur_files_path).sizeb
+        progress = sly.Progress("Downloading archive", total_cnt=size, is_size=True)
+        api.file.download(
+            TEAM_ID, cur_files_path, archive_path, progress_cb=progress.iters_done_report
+        )
 
         sly.logger.info(
             f"Successfully downloaded archive to {archive_path}, will extract it to {extract_dir}."
@@ -465,8 +498,9 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
             raise Exception("No such file: {}".format(INPUT_FILE))
 
-        sly.fs.remove_junk_from_dir(extract_dir)
-        extracted_paths = sly.fs.list_dir_recursively(extract_dir, include_subdirs=True, use_global_paths=True)
+        extracted_paths = sly.fs.list_dir_recursively(
+            extract_dir, include_subdirs=True, use_global_paths=True
+        )
         for path in extracted_paths:
             if sly.fs.get_file_name_with_ext(path).startswith("._"):
                 sly.fs.silent_remove(path)
@@ -492,6 +526,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     # sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
 
+    sly.fs.remove_junk_from_dir(input_dir)
     project_count = 0
     markers = find_markers(input_dir)
 
