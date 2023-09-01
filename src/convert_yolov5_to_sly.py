@@ -448,7 +448,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
         if sly.fs.dir_exists(input_dir):
             sly.fs.clean_dir(input_dir)
-        size = api.file.get_directory_size(TEAM_ID, cur_files_path).sizeb
+        size = api.file.get_directory_size(TEAM_ID, cur_files_path)
         pbar = tqdm(total=size, desc="Downloading directory", unit="M", unit_scale=True)
         api.file.download_directory(TEAM_ID, cur_files_path, input_dir, pbar.update)
 
