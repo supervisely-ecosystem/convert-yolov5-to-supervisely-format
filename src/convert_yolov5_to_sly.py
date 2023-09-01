@@ -391,7 +391,7 @@ def find_markers(input_dir):
     paths = sly.fs.list_files_recursively(input_dir, valid_extensions=".yaml")
     markers = [os.path.basename(path) for path in paths]
     if len(markers) == 0:
-        sly.logger.info("No config files found in directory. Keep by default: data_config.yaml")
+        sly.logger.warn("No config files found in directory. Keep by default: data_config.yaml")
         markers = [DATA_CONFIG_NAME]
     if len(markers) == 1:
         sly.logger.info(f"Found config file: {paths}")
@@ -440,7 +440,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         project_name = Path(cur_files_path).name
 
         sly.logger.info(
-            f"Trying to download directory from {cur_files_path} to local path: {input_dir}"
+            f"Start downloading directory from {cur_files_path} to local path: {input_dir}"
         )
 
         if sly.fs.dir_exists(input_dir):
@@ -465,7 +465,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         project_name = sly.fs.get_file_name(INPUT_FILE)
 
         sly.logger.info(
-            f"Trying to download archive from {cur_files_path} to local path: {archive_path}"
+            f"Start downloading archive from {cur_files_path} to local path: {archive_path}"
         )
 
         if sly.fs.dir_exists(input_dir):
@@ -553,7 +553,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         sly.logger.info(f"{project_count} projects have been successfully uploaded.")
     else:
         try:
-            sly.logger.info("No projects found. Trying to upload images only.")
+            sly.logger.warn("No projects found. Trying to upload images only.")
             upload_images_only(api, task_id, TEAM_ID, input_dir)
         except:
             raise Exception(
