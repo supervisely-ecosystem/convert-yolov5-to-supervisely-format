@@ -274,7 +274,11 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
         dataset_name = os.path.basename(dataset_path)
 
         images_list = sorted(
-            sly.fs.list_files(dataset_path, valid_extensions=sly.image.SUPPORTED_IMG_EXTS)
+            sly.fs.list_files(
+                dataset_path,
+                valid_extensions=sly.image.SUPPORTED_IMG_EXTS,
+                ignore_valid_extensions_case=True,
+            )
         )
         if len(images_list) == 0:
             sly.logger.warning(f"Dataset: {dataset_name} is empty. It will be skipped.")
