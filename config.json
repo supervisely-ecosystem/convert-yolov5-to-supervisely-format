@@ -3,7 +3,7 @@
   "type": "app",
   "categories": ["import", "images"],
   "description": "Transform YOLO v5 format to supervisely project",
-  "docker_image": "supervisely/import-export:6.72.157",
+  "docker_image": "supervisely/import-export:6.72.160",
   "main_script": "src/convert_yolov5_to_sly.py",
   "task_location": "workspace_tasks",
   "icon": "https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/c723ba07-933c-4627-8124-afb29fbbce2a",
