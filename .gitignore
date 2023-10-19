@@ -5,3 +5,4 @@ app_debug_data
 .venv
 supervisely
 .flake8
+.DS_Store
