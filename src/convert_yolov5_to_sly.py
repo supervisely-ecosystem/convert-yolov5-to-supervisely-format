@@ -5,6 +5,7 @@ import zipfile
 
 from dotenv import load_dotenv
 from pathlib import Path
+from os.path import basename, normpath, dirname
 
 import supervisely as sly
 
@@ -271,7 +272,7 @@ def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
 def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
     for dataset_type, dataset_path in config_yaml_info["datasets"]:
         tag_meta = project_meta.get_tag_meta(dataset_type)
-        dataset_name = os.path.basename(dataset_path)
+        dataset_name = basename(dataset_path)
 
         images_list = sorted(
             sly.fs.list_files(
@@ -298,7 +299,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                 except:
                     bad_images.append(image_file_name)
                     continue
-                image_name = os.path.basename(image_file_name)
+                image_name = basename(image_file_name)
                 cur_img_names.append(image_name)
                 cur_img_paths.append(image_file_name)
                 ann_file_name = os.path.join(
@@ -351,6 +352,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 
 def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
     global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
+
     images_list = sly.fs.list_files_recursively(
         input_dir, valid_extensions=sly.image.SUPPORTED_IMG_EXTS
     )
@@ -361,7 +363,7 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
         common_parent_dir = os.path.dirname(images_list[0])
     else:
         common_parent_dir = os.path.commonpath(images_list)
-    project_name = os.path.basename(common_parent_dir.strip("/"))
+    project_name = basename(common_parent_dir.strip("/"))
 
     project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
     dataset = api.dataset.create(project.id, "train", change_name_if_conflict=True)
@@ -377,7 +379,7 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
             except:
                 bad_images.append(img)
                 continue
-            img_names.append(os.path.basename(img))
+            img_names.append(basename(img))
             img_paths.append(img)
         try:
             api.image.upload_paths(dataset.id, img_names, img_paths)
@@ -393,7 +395,7 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
 
 def find_markers(input_dir):
     paths = sly.fs.list_files_recursively(input_dir, valid_extensions=".yaml")
-    markers = [os.path.basename(path) for path in paths]
+    markers = [basename(path) for path in paths]
     if len(markers) == 0:
         sly.logger.warn("No config files found in directory. Keep by default: data_config.yaml")
         markers = [DATA_CONFIG_NAME]
@@ -408,11 +410,12 @@ def find_markers(input_dir):
 @sly.timeit
 def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE, DATA_CONFIG_NAME
-    sly.logger.info(f"Launching converter. INPUT_DIR: {INPUT_DIR}. INPUT_FILE: {INPUT_FILE}.")
+    sly.logger.info(f"Input paths: INPUT_DIR - {INPUT_DIR}. INPUT_FILE - {INPUT_FILE}.")
 
     storage_dir = my_app.data_dir
 
     # check if file was uploaded in folder mode and change mode to file (and opposite)
+    sly.logger.info("Checking input path...")
     if INPUT_DIR:
         listdir = api.file.listdir(TEAM_ID, INPUT_DIR)
         if len(listdir) == 1 and sly.fs.get_file_ext(listdir[0]) in ARCHIVE_EXTENSIONS:
@@ -420,22 +423,25 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             sly.logger.info("Switching to file mode.")
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
+        sly.logger.info("File mode is selected, but uploaded file is not an archive.")
         if sly.fs.get_file_ext(INPUT_FILE) not in ARCHIVE_EXTENSIONS:
-            sly.logger.info("File mode is selected, but uploaded file is not an archive.")
-            parent_dir, _ = os.path.split(INPUT_FILE)
-            if os.path.basename(parent_dir) in ["images", "labels"]:
+            parent_dir = dirname(normpath(INPUT_FILE))
+            listdir = [basename(normpath(path)) for path in api.file.listdir(TEAM_ID, parent_dir)]
+            if sly.fs.get_file_ext(INPUT_FILE) == ".yaml":
+                if "images" in listdir and "labels" in listdir:
+                    INPUT_DIR, INPUT_FILE = parent_dir, None
+            if basename(parent_dir) in ["train", "val"]:
                 parent_dir = os.path.dirname(parent_dir)
-            elif os.path.basename(parent_dir) in ["train", "val"]:
-                parent_dir = os.path.dirname(os.path.dirname(parent_dir))
+            if basename(parent_dir) in ["images", "labels"]:
+                parent_dir = os.path.dirname(parent_dir)
             if not parent_dir.endswith("/"):
                 parent_dir += "/"
-            sly.logger.info(f"parent_dir: {parent_dir}")
             INPUT_DIR, INPUT_FILE = parent_dir, None
 
     if INPUT_DIR:
         # If the app is launched from directory (not archive file).
 
-        sly.logger.info("The app is launched from directory (not archive file).")
+        sly.logger.info(f"The app is launched from directory: {INPUT_DIR}")
 
         cur_files_path = INPUT_DIR
         extract_dir = os.path.join(storage_dir, str(Path(cur_files_path).parent).lstrip("/"))
@@ -457,8 +463,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
     else:
         # If the app is launched from archive file.
-
-        sly.logger.info("The app is launched from archive file.")
+        sly.logger.info(f"The app is launched from archive file: {INPUT_FILE}")
 
         cur_files_path = INPUT_FILE
         extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
@@ -516,7 +521,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     #     all_files = glob.glob(os.path.join(input_dir, "**"), recursive=True)
     #     yaml_path = None
     #     for file in all_files:
-    #         if os.path.basename(file) == DATA_CONFIG_NAME:
+    #         if basename(file) == DATA_CONFIG_NAME:
     #             yaml_path = file
     #             break
     #     if yaml_path is None:
@@ -542,7 +547,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
                 if sly.fs.file_exists(config_yaml_path):
                     sly.logger.info(f"Found config file: {config_yaml_path}")
                     break
-            project_name = os.path.basename(os.path.normpath(yolo_dir))
+            project_name = basename(os.path.normpath(yolo_dir))
             config_yaml_info = read_config_yaml(config_yaml_path, app_logger)
             project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
             project_meta = upload_project_meta(api, project.id, config_yaml_info)
@@ -559,10 +564,10 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         try:
             sly.logger.warn("No projects found. Trying to upload images only.")
             upload_images_only(api, task_id, TEAM_ID, input_dir)
-        except:
+        except Exception as e:
             raise Exception(
                 "No projects have been uploaded. Please check logs and ensure that "
-                "the input data meets the requirements specified in the README."
+                f"the input data meets the requirements specified in the README: {e}"
             )
 
     my_app.stop()
