@@ -424,10 +424,16 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
     elif INPUT_FILE:
         sly.logger.info("File mode is selected, but uploaded file is not an archive.")
-        if sly.fs.get_file_ext(INPUT_FILE) not in ARCHIVE_EXTENSIONS:
+        ext = sly.fs.get_file_ext(INPUT_FILE)
+        if ext not in ARCHIVE_EXTENSIONS:
+            if ext.lower() not in [".yaml", ".txt"] + sly.image.SUPPORTED_IMG_EXTS:
+                raise Exception(
+                    "Unsupported files format. "
+                    "Project must be an archive file or as directory with IMAGES, TXT labels and YAML config file."
+                )
             parent_dir = dirname(normpath(INPUT_FILE))
             listdir = [basename(normpath(path)) for path in api.file.listdir(TEAM_ID, parent_dir)]
-            if sly.fs.get_file_ext(INPUT_FILE) == ".yaml":
+            if ext == ".yaml":
                 if "images" in listdir and "labels" in listdir:
                     INPUT_DIR, INPUT_FILE = parent_dir, None
             if basename(parent_dir) in ["train", "val"]:
@@ -558,7 +564,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         except Exception as e:
             sly.logger.warning(f"There was a problem while processing {yolo_dir}: {e}")
 
-    if project_count:
+    if project_count > 0:
         sly.logger.info(f"{project_count} projects have been successfully uploaded.")
     else:
         try:
