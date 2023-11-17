@@ -365,9 +365,8 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
     images_list = sly.fs.list_files_recursively(input_dir, filter_fn=_filter_image_file_extention)
 
     if len(bad_files) > 0:
-        sly.logger.warn(
-            f"Skipped {len(bad_files)} files with unsupported format: {sly.fs.get_file_name_with_ext(bad_files)}"
-        )
+        file_names = [sly.fs.get_file_name_with_ext(file_path) for file_path in bad_files]
+        sly.logger.warn(f"Skipped {len(bad_files)} files with unsupported format: {file_names}")
     if len(images_list) == 0:
         raise Exception("Not found images in the input directory")
     if len(images_list) == 1:
