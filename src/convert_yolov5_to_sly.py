@@ -353,12 +353,23 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
 def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
     global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
 
-    images_list = sly.fs.list_files_recursively(
-        input_dir, valid_extensions=sly.image.SUPPORTED_IMG_EXTS
-    )
-    images_list = [f for f in images_list if sly.fs.get_file_ext(f) != ".nrrd"]
+    def _filter_image_file_extention(file_name):
+        ext = sly.fs.get_file_ext(file_name).lower()
+        return ext in sly.image.SUPPORTED_IMG_EXTS and ext != ".nrrd"
+
+    def _filter_unsupported_files(file_name):
+        ext = sly.fs.get_file_ext(file_name).lower()
+        return ext not in [".yaml", ".txt"] + sly.image.SUPPORTED_IMG_EXTS or ext == ".nrrd"
+
+    bad_files = sly.fs.list_files_recursively(input_dir, filter_fn=_filter_unsupported_files)
+    images_list = sly.fs.list_files_recursively(input_dir, filter_fn=_filter_image_file_extention)
+
+    if len(bad_files) > 0:
+        sly.logger.warn(
+            f"Skipped {len(bad_files)} files with unsupported format: {sly.fs.get_file_name_with_ext(bad_files)}"
+        )
     if len(images_list) == 0:
-        raise
+        raise Exception("Not found images in the input directory")
     if len(images_list) == 1:
         common_parent_dir = os.path.dirname(images_list[0])
     else:
