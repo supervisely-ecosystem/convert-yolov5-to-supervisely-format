@@ -15,9 +15,13 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+    },
   "debug.inlineValues": "off",
   "python.analysis.typeCheckingMode": "off",
   "python.analysis.autoImportCompletions": false

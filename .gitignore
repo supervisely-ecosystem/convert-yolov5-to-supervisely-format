@@ -6,3 +6,4 @@ app_debug_data
 supervisely
 .flake8
 .DS_Store
+storage/

@@ -1,35 +1,41 @@
 import os
-import yaml
 import tarfile
 import zipfile
-
-from dotenv import load_dotenv
+from os.path import basename, dirname, normpath
 from pathlib import Path
-from os.path import basename, normpath, dirname
 
 import supervisely as sly
-
+import yaml
+from dotenv import load_dotenv
 
 if sly.is_development():
     load_dotenv("local.env")
     load_dotenv(os.path.expanduser("~/supervisely.env"))
 
-my_app = sly.AppService()
-
-TEAM_ID = sly.env.team_id()
-TASK_ID = sly.env.task_id()
-WORKSPACE_ID = sly.env.workspace_id()
-INPUT_DIR = os.environ.get("modal.state.slyFolder")
+# region constants
+STORAGE_DIR = os.path.join(os.getcwd(), "storage")
+DATA_CONFIG_NAME = "data_config.yaml"
+ARCHIVE_EXTENSIONS = [".zip", ".tar", ".gz", ".tar.gz", ".tgz", ".xz"]
+# region envvars
+team_id = sly.env.team_id()
+workspace_id = sly.env.workspace_id()
+input_dir = sly.env.folder(raise_not_found=False)
+task_id = sly.env.task_id(raise_not_found=False)
 # If path to the import dir from env variable does not end with slash, add it, otherwise the error will occur.
-if INPUT_DIR is not None and not INPUT_DIR.endswith("/"):
+if input_dir is not None and not input_dir.endswith("/"):
     sly.logger.info(
         "The path to the import dir from env variable does not end with slash. Adding it."
     )
-    INPUT_DIR += "/"
-INPUT_FILE = os.environ.get("modal.state.slyFile")
-
-DATA_CONFIG_NAME = "data_config.yaml"
-ARCHIVE_EXTENSIONS = [".zip", ".tar", ".gz", ".tar.gz", ".tgz", ".xz"]
+    input_dir += "/"
+input_file = sly.env.file(raise_not_found=False)
+# endregion
+sly.logger.info(
+    f"Team: {team_id}, Workspace: {workspace_id}, "
+    f"Input directory: {input_dir}, Input file: {input_file}"
+)
+if not task_id:
+    sly.logger.info("Task id is not found. Looks like app working in development mode.")
+sly.fs.mkdir(STORAGE_DIR, remove_content_if_exists=True)
 
 coco_classes = [
     "person",
@@ -123,9 +129,9 @@ def generate_colors(count):
     return colors
 
 
-def get_coco_names(config_yaml, app_logger):
+def get_coco_names(config_yaml):
     if "names" not in config_yaml:
-        app_logger.warn(
+        sly.logger.warn(
             "['names'] key is empty in {}. Class names will be taken from default coco classes names".format(
                 DATA_CONFIG_NAME
             )
@@ -137,7 +143,7 @@ def get_coco_classes_colors(config_yaml, default_count):
     return config_yaml.get("colors", generate_colors(default_count))
 
 
-def read_config_yaml(config_yaml_path, app_logger):
+def read_config_yaml(config_yaml_path):
     result = {"names": None, "colors": None, "datasets": []}
 
     if not os.path.isfile(config_yaml_path):
@@ -145,24 +151,24 @@ def read_config_yaml(config_yaml_path, app_logger):
 
     with open(config_yaml_path, "r") as config_yaml_info:
         config_yaml = yaml.safe_load(config_yaml_info)
-        result["names"] = get_coco_names(config_yaml, app_logger)
+        result["names"] = get_coco_names(config_yaml)
         result["colors"] = get_coco_classes_colors(config_yaml, len(result["names"]))
 
         if "nc" not in config_yaml:
-            app_logger.warn(
+            sly.logger.warn(
                 "Number of classes is not defined in {}. Actual number of classes is {}.".format(
                     DATA_CONFIG_NAME, len(result["names"])
                 )
             )
         elif config_yaml.get("nc", []) != len(result["names"]):
-            app_logger.warn(
+            sly.logger.warn(
                 "Defined number of classes {} doesn't match with actual number of classes {}. Config name: {}.".format(
                     config_yaml.get("nc", int), len(result["names"]), DATA_CONFIG_NAME
                 )
             )
 
         if len(config_yaml.get("colors", [])) == 0:
-            app_logger.warn(
+            sly.logger.warn(
                 "Colors not found in {}. Colors will be generated for classes automatically.".format(
                     DATA_CONFIG_NAME
                 )
@@ -171,7 +177,7 @@ def read_config_yaml(config_yaml_path, app_logger):
         elif result["names"] == coco_classes or len(result["names"]) != len(
             config_yaml.get("colors")
         ):
-            app_logger.warn(
+            sly.logger.warn(
                 "len(config_yaml['colors']) !=  len(config_yaml['names']). New colors "
                 "will be generated for classes automatically."
             )
@@ -191,7 +197,7 @@ def read_config_yaml(config_yaml_path, app_logger):
                     cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
 
                 if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
-                    app_logger.warn(
+                    sly.logger.warn(
                         "'train' and 'val' paths for images are the same in {}. Images will be uploaded "
                         "to 'train' dataset".format(DATA_CONFIG_NAME)
                     )
@@ -269,7 +275,7 @@ def parse_line(line, img_width, img_height, project_meta, config_yaml_info):
         )
 
 
-def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, app_logger):
+def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info):
     for dataset_type, dataset_path in config_yaml_info["datasets"]:
         tag_meta = project_meta.get_tag_meta(dataset_type)
         dataset_name = basename(dataset_path)
@@ -321,7 +327,7 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
                                 )
                                 labels_arr.append(label)
                             except Exception as e:
-                                app_logger.warn(
+                                sly.logger.warn(
                                     e,
                                     {
                                         "filename": ann_file_name,
@@ -350,8 +356,8 @@ def process_coco_dir(input_dir, project, project_meta, api, config_yaml_info, ap
     sly.logger.info(f"Project {project.name} has been successfully uploaded.")
 
 
-def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
-    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE
+def upload_images_only(api: sly.Api, team_id, input_dir):
+    # global team_id, workspace_id, PROJECT_ID, input_dir, input_file
 
     def _filter_image_file_extention(file_name):
         ext = sly.fs.get_file_ext(file_name).lower()
@@ -375,7 +381,7 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
         common_parent_dir = os.path.commonpath(images_list)
     project_name = basename(common_parent_dir.strip("/"))
 
-    project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
+    project = api.project.create(workspace_id, project_name, change_name_if_conflict=True)
     dataset = api.dataset.create(project.id, "train", change_name_if_conflict=True)
 
     bad_images = []
@@ -398,8 +404,13 @@ def upload_images_only(api: sly.Api, task_id, team_id, input_dir):
         progress.iters_done_report(len(batch))
     if len(bad_images) > 0:
         sly.logger.warn(f"Skipped {len(bad_images)} images with unsupported format: {bad_images}")
-
-    api.task.set_output_project(task_id, project.id, project.name)
+    try:
+        api.task.set_output_project(task_id, project.id, project.name)
+    except Exception as e:
+        sly.logger.info(
+            f"There was an error while setting output project: {e}"
+            f"Mostly like the app in development mode and has no task_id."
+        )
     sly.logger.info(f"Images from have been uploaded to project '{project.name}'")
 
 
@@ -416,53 +427,49 @@ def find_markers(input_dir):
     return list(set(markers))
 
 
-@my_app.callback("yolov5_sly_converter")
-@sly.timeit
-def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
-    global TEAM_ID, WORKSPACE_ID, PROJECT_ID, INPUT_DIR, INPUT_FILE, DATA_CONFIG_NAME
-    sly.logger.info(f"Input paths: INPUT_DIR - {INPUT_DIR}. INPUT_FILE - {INPUT_FILE}.")
-
-    storage_dir = my_app.data_dir
+def yolov5_sly_converter(api: sly.Api):
+    global team_id, workspace_id, PROJECT_ID, input_dir, input_file, DATA_CONFIG_NAME
+    sly.logger.info(f"Input paths: input_dir - {input_dir}. input_file - {input_file}.")
 
     # check if file was uploaded in folder mode and change mode to file (and opposite)
     sly.logger.info("Checking input path...")
-    if INPUT_DIR:
-        listdir = api.file.listdir(TEAM_ID, INPUT_DIR)
+    if input_dir:
+        listdir = api.file.listdir(team_id, input_dir)
         if len(listdir) == 1 and sly.fs.get_file_ext(listdir[0]) in ARCHIVE_EXTENSIONS:
             sly.logger.info("Folder mode is selected, but archive file is uploaded.")
             sly.logger.info("Switching to file mode.")
-            INPUT_DIR, INPUT_FILE = None, os.path.join(INPUT_DIR, listdir[0])
-    elif INPUT_FILE:
+            input_dir, input_file = None, os.path.join(input_dir, listdir[0])
+    elif input_file:
         sly.logger.info("File mode is selected, but uploaded file is not an archive.")
-        ext = sly.fs.get_file_ext(INPUT_FILE)
+        ext = sly.fs.get_file_ext(input_file)
         if ext not in ARCHIVE_EXTENSIONS:
             if ext.lower() not in [".yaml", ".txt"] + sly.image.SUPPORTED_IMG_EXTS:
                 raise Exception(
                     "Unsupported files format. "
                     "Project must be an archive file or as directory with IMAGES, TXT labels and YAML config file."
                 )
-            parent_dir = dirname(normpath(INPUT_FILE))
-            listdir = [basename(normpath(path)) for path in api.file.listdir(TEAM_ID, parent_dir)]
+            parent_dir = dirname(normpath(input_file))
+            listdir = [basename(normpath(path)) for path in api.file.listdir(team_id, parent_dir)]
             if ext == ".yaml":
                 if "images" in listdir and "labels" in listdir:
-                    INPUT_DIR, INPUT_FILE = parent_dir, None
+                    input_dir, input_file = parent_dir, None
             if basename(parent_dir) in ["train", "val"]:
                 parent_dir = os.path.dirname(parent_dir)
             if basename(parent_dir) in ["images", "labels"]:
                 parent_dir = os.path.dirname(parent_dir)
             if not parent_dir.endswith("/"):
                 parent_dir += "/"
-            INPUT_DIR, INPUT_FILE = parent_dir, None
+            input_dir, input_file = parent_dir, None
 
-    if INPUT_DIR:
+    if input_dir:
         # If the app is launched from directory (not archive file).
 
-        sly.logger.info(f"The app is launched from directory: {INPUT_DIR}")
+        sly.logger.info(f"The app is launched from directory: {input_dir}")
 
-        cur_files_path = INPUT_DIR
-        extract_dir = os.path.join(storage_dir, str(Path(cur_files_path).parent).lstrip("/"))
+        cur_files_path = input_dir
+        extract_dir = os.path.join(STORAGE_DIR, str(Path(cur_files_path).parent).lstrip("/"))
         input_dir = os.path.join(extract_dir, Path(cur_files_path).name)
-        archive_path = os.path.join(storage_dir, cur_files_path.strip("/") + ".tar")
+        archive_path = os.path.join(STORAGE_DIR, cur_files_path.strip("/") + ".tar")
         project_name = Path(cur_files_path).name
 
         sly.logger.info(
@@ -471,23 +478,23 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
 
         if sly.fs.dir_exists(input_dir):
             sly.fs.clean_dir(input_dir)
-        size = api.file.get_directory_size(TEAM_ID, cur_files_path)
+        size = api.file.get_directory_size(team_id, cur_files_path)
         progress = sly.Progress("Downloading directory", total_cnt=size, is_size=True)
-        api.file.download_directory(TEAM_ID, cur_files_path, input_dir, progress.iters_done_report)
+        api.file.download_directory(team_id, cur_files_path, input_dir, progress.iters_done_report)
 
         sly.logger.info(f"Successfully downloaded directory to {input_dir}.")
 
     else:
         # If the app is launched from archive file.
-        sly.logger.info(f"The app is launched from archive file: {INPUT_FILE}")
+        sly.logger.info(f"The app is launched from archive file: {input_file}")
 
-        cur_files_path = INPUT_FILE
-        extract_dir = os.path.join(storage_dir, sly.fs.get_file_name(cur_files_path))
+        cur_files_path = input_file
+        extract_dir = os.path.join(STORAGE_DIR, sly.fs.get_file_name(cur_files_path))
         if sly.fs.get_file_ext(extract_dir) in ARCHIVE_EXTENSIONS:
             extract_dir = os.path.splitext(extract_dir)[0]
-        archive_path = os.path.join(storage_dir, sly.fs.get_file_name_with_ext(cur_files_path))
+        archive_path = os.path.join(STORAGE_DIR, sly.fs.get_file_name_with_ext(cur_files_path))
         input_dir = extract_dir
-        project_name = sly.fs.get_file_name(INPUT_FILE)
+        project_name = sly.fs.get_file_name(input_file)
 
         sly.logger.info(
             f"Start downloading archive from {cur_files_path} to local path: {archive_path}"
@@ -499,10 +506,10 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         if sly.fs.file_exists(archive_path):
             sly.fs.silent_remove(archive_path)
 
-        size = api.file.get_info_by_path(TEAM_ID, cur_files_path).sizeb
+        size = api.file.get_info_by_path(team_id, cur_files_path).sizeb
         progress = sly.Progress("Downloading archive", total_cnt=size, is_size=True)
         api.file.download(
-            TEAM_ID, cur_files_path, archive_path, progress_cb=progress.iters_done_report
+            team_id, cur_files_path, archive_path, progress_cb=progress.iters_done_report
         )
 
         sly.logger.info(
@@ -521,7 +528,7 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
             sly.logger.info(f"Successfully extracted archive to {extract_dir}.")
         else:
             sly.logger.warn("Archive cannot be unpacked {}".format(archive_path))
-            raise Exception("No such file: {}".format(INPUT_FILE))
+            raise Exception("No such file: {}".format(input_file))
 
         extracted_paths = sly.fs.list_dir_recursively(
             extract_dir, include_subdirs=True, use_global_paths=True
@@ -529,27 +536,6 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
         for path in extracted_paths:
             if sly.fs.get_file_name_with_ext(path).startswith("._"):
                 sly.fs.silent_remove(path)
-
-    # if not os.path.exists(os.path.join(input_dir, DATA_CONFIG_NAME)):
-    #     sly.logger.info(
-    #         f"Yaml config file not found in {input_dir}. Searching for it in subfolders."
-    #     )
-    #     all_files = glob.glob(os.path.join(input_dir, "**"), recursive=True)
-    #     yaml_path = None
-    #     for file in all_files:
-    #         if basename(file) == DATA_CONFIG_NAME:
-    #             yaml_path = file
-    #             break
-    #     if yaml_path is None:
-    #         raise FileNotFoundError(
-    #             "Yaml config file not found. Please check your input project directory."
-    #         )
-    #     else:
-    #         sly.logger.info(f"Yaml config file found: {yaml_path}")
-    #         input_dir = os.path.dirname(yaml_path)
-    #         sly.logger.info(f"Input dir path changed to {input_dir}")
-
-    # sly.logger.info(f"List of files in input directory: {os.listdir(input_dir)}")
 
     sly.fs.remove_junk_from_dir(input_dir)
     project_count = 0
@@ -564,11 +550,17 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
                     sly.logger.info(f"Found config file: {config_yaml_path}")
                     break
             project_name = basename(os.path.normpath(yolo_dir))
-            config_yaml_info = read_config_yaml(config_yaml_path, app_logger)
-            project = api.project.create(WORKSPACE_ID, project_name, change_name_if_conflict=True)
+            config_yaml_info = read_config_yaml(config_yaml_path)
+            project = api.project.create(workspace_id, project_name, change_name_if_conflict=True)
             project_meta = upload_project_meta(api, project.id, config_yaml_info)
-            process_coco_dir(yolo_dir, project, project_meta, api, config_yaml_info, app_logger)
-            api.task.set_output_project(task_id, project.id, project.name)
+            process_coco_dir(yolo_dir, project, project_meta, api, config_yaml_info)
+            try:
+                api.task.set_output_project(task_id, project.id, project.name)
+            except Exception as e:
+                sly.logger.info(
+                    f"There was an error while setting output project: {e}"
+                    f"Mostly like the app in development mode and has no task_id."
+                )
 
             project_count += 1
         except Exception as e:
@@ -579,30 +571,14 @@ def yolov5_sly_converter(api: sly.Api, task_id, context, state, app_logger):
     else:
         try:
             sly.logger.warn("No projects found. Trying to upload images only.")
-            upload_images_only(api, task_id, TEAM_ID, input_dir)
+            upload_images_only(api, team_id, input_dir)
         except Exception as e:
             raise Exception(
                 "No projects have been uploaded. Please check logs and ensure that "
                 f"the input data meets the requirements specified in the README: {e}"
             )
 
-    my_app.stop()
-
-
-def main():
-    sly.logger.info(
-        "Script arguments",
-        extra={
-            "context.teamId": TEAM_ID,
-            "context.workspaceId": WORKSPACE_ID,
-            "modal.state.slyFolder": INPUT_DIR,
-            "modal.state.slyFile": INPUT_FILE,
-            "CONFIG_DIR": os.environ.get("CONFIG_DIR", None),
-        },
-    )
-
-    my_app.run(initial_events=[{"command": "yolov5_sly_converter"}])
-
 
 if __name__ == "__main__":
-    sly.main_wrapper("main", main)
+    api = sly.Api.from_env()
+    yolov5_sly_converter(api)
