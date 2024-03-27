@@ -184,17 +184,23 @@ def read_config_yaml(config_yaml_path):
             result["colors"] = generate_colors(len(result["names"]))
 
         conf_dirname = os.path.dirname(config_yaml_path)
-        for t in ["train", "val"]:
-            if t not in config_yaml:
+        sly.logger.info(
+            f"Will try to find dataset paths in {DATA_CONFIG_NAME} in {conf_dirname} directory."
+        )
+        for t in ["train", "val", "test"]:
+            sly.logger.info(f"Checking {t} dataset path in {DATA_CONFIG_NAME}...")
+            if t not in config_yaml and t != "test":
                 raise Exception("{!r} path is not defined in {!r}".format(t, DATA_CONFIG_NAME))
 
             if t in config_yaml:
+                sly.logger.info(f"Found {t} dataset path in {DATA_CONFIG_NAME}...")
                 if config_yaml[t].startswith(".."):
                     cur_dataset_path = os.path.normpath(
                         os.path.join(conf_dirname, "/".join(config_yaml[t].split("/")[2:]))
                     )
                 else:
                     cur_dataset_path = os.path.normpath(os.path.join(conf_dirname, config_yaml[t]))
+                sly.logger.info(f"Path to {t} dataset: {cur_dataset_path}.")
 
                 if len(result["datasets"]) == 1 and config_yaml["train"] == config_yaml["val"]:
                     sly.logger.warn(
@@ -204,6 +210,9 @@ def read_config_yaml(config_yaml_path):
                     continue
 
                 if os.path.isdir(cur_dataset_path):
+                    sly.logger.info(
+                        f"Dataset path {cur_dataset_path} exists and was added to the list."
+                    )
                     result["datasets"].append((t, cur_dataset_path))
 
                 elif len(result["datasets"]) == 0:
@@ -217,6 +226,9 @@ def read_config_yaml(config_yaml_path):
                         f"The directory {cur_dataset_path} wasn't found. It was created."
                     )
 
+    sly.logger.info(f"Config file {DATA_CONFIG_NAME} has been successfully read.")
+    sly.logger.info(f"Was found {len(result['datasets'])} datasets in {DATA_CONFIG_NAME}.")
+
     return result
 
 
@@ -229,10 +241,11 @@ def upload_project_meta(api, project_id, config_yaml_info):
         )
         classes.append(obj_class)
 
-    tags_arr = [
-        sly.TagMeta(name="train", value_type=sly.TagValueType.NONE),
-        sly.TagMeta(name="val", value_type=sly.TagValueType.NONE),
-    ]
+    tags_arr = []
+    for dataset_type, _ in config_yaml_info["datasets"]:
+        tags_arr.append(sly.TagMeta(name=dataset_type, value_type=sly.TagValueType.NONE))
+        sly.logger.info(f"Added tag {dataset_type} to project meta.")
+
     project_meta = sly.ProjectMeta(
         obj_classes=sly.ObjClassCollection(items=classes),
         tag_metas=sly.TagMetaCollection(items=tags_arr),
