@@ -8,6 +8,8 @@ import supervisely as sly
 import yaml
 from dotenv import load_dotenv
 
+from workflow import Workflow
+
 if sly.is_development():
     load_dotenv("local.env")
     load_dotenv(os.path.expanduser("~/supervisely.env"))
@@ -425,6 +427,9 @@ def upload_images_only(api: sly.Api, team_id, input_dir):
             f"Mostly like the app in development mode and has no task_id."
         )
     sly.logger.info(f"Images from have been uploaded to project '{project.name}'")
+    # -------------------------------------- Add Workflow Output ------------------------------------- #
+    workflow.add_output(project.id)
+    # ----------------------------------------------- - ---------------------------------------------- #
 
 
 def find_markers(input_dir):
@@ -576,6 +581,9 @@ def yolov5_sly_converter(api: sly.Api):
                 )
 
             project_count += 1
+            # -------------------------------------- Add Workflow Output ------------------------------------- #
+            workflow.add_output(project.id)
+            # ----------------------------------------------- - ---------------------------------------------- #
         except Exception as e:
             sly.logger.warning(f"There was a problem while processing {yolo_dir}: {e}")
 
@@ -594,4 +602,5 @@ def yolov5_sly_converter(api: sly.Api):
 
 if __name__ == "__main__":
     api = sly.Api.from_env()
+    workflow = Workflow(api)
     yolov5_sly_converter(api)
