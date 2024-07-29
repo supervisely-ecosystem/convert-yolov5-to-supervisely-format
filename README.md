@@ -27,7 +27,9 @@ The app transforms folder or `tar` archive with images and labels in [YOLOv5 for
 
 ## Preparation
 
-Upload images and labels in YOLO v5 format to team files. It is possible to upload folders ([download example](https://drive.google.com/drive/folders/1CqG0bmDRoGF33r5gLWnmEHgkp9u196DZ?usp=sharing)) or tar archives ([download example](https://drive.google.com/drive/folders/1YmbEBqgOVrL9IiBVRpKJ-_7ZnV31Wc7r?usp=sharing)).
+Upload images and labels in YOLO v5 format to Team Files. It is possible to upload folders or `.tar` archives:
+ - `coco128` example [download ](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip) ➡️ extract ➡️ convert folder
+ - `lemons.tar` example [download ](https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/releases/download/v2.0.1/lemons.tar) ➡️ convert archive
 
 ![](https://github.com/supervisely-ecosystem/convert-yolov5-to-supervisely-format/assets/79905215/f3358661-7fff-48cd-8ca4-f0989752022d)
 
