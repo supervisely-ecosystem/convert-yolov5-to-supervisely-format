@@ -46,3 +46,4 @@ class Workflow:
     @check_compatibility
     def add_output(self, project_id: int):
         self.api.app.workflow.add_output_project(project_id)
+        sly.logger.debug(f"Workflow: Output project - {project_id}")
