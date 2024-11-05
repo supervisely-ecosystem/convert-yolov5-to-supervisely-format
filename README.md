@@ -11,11 +11,11 @@
   <a href="#How-To-Use">How To Use</a>
 </p>
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervise.ly/apps/convert-yolov5-to-supervisely-format)
-[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervise.ly/slack)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/convert-yolov5-to-supervisely-format)
+[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/convert-yolov5-to-supervisely-format)
-[![views](https://app.supervise.ly/img/badges/views/supervisely-ecosystem/convert-yolov5-to-supervisely-format.png)](https://supervise.ly)
-[![runs](https://app.supervise.ly/img/badges/runs/supervisely-ecosystem/convert-yolov5-to-supervisely-format.png)](https://supervise.ly)
+[![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/convert-yolov5-to-supervisely-format.png)](https://supervisely.com)
+[![runs](https://app.supervisely.com/img/badges/runs/supervisely-ecosystem/convert-yolov5-to-supervisely-format.png)](https://supervisely.com)
 
 </div>
 
@@ -23,7 +23,7 @@
 
 🗄️ Starting from version 1.2.2 the application supports the import of multiple projects at once. Each project should be placed in a separate directory with the correct structure (see below).
 
-The app transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervise.ly/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
+The app transforms folder or `tar` archive with images and labels in [YOLOv5 format](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) to [Supervisely format](https://docs.supervisely.com/data-organization/00_ann_format_navi) and uploads data to Supervisely Platform.
 
 ## Preparation
 
